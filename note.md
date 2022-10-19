@@ -38,3 +38,11 @@ Vue.use(MenuItem);
 ~~~
 
 免费字体文件下载网站：[免费字体 - 字体大全 - 字体安装包免费下载 - 图星人 (txrpic.com)](https://www.txrpic.com/ziti/?utm_source=360&utm_term=527)
+
+# 4.Scale组件
+
+模板内容：`<div class="container"><slot></slot></div>`，相当于一个组件外框，插槽<slot>替换为其它组件
+
+# 5.Screen组件
+
+类似于Scale组件的作用，做一个组件外框

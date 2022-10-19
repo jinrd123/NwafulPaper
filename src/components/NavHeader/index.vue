@@ -1,6 +1,6 @@
 <template>
   <el-menu
-    :default-active="activeIndex"
+    default-active="/home"
     mode="horizontal"
     :router="true"
   >

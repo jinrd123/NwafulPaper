@@ -18,6 +18,7 @@ import Wallpaper from "@/components/Wallpaper";
 import Scale from "@/components/Scale";
 import Screen from "@/components/Screen";
 export default {
+  name: 'Home',
   data() {
     return {
       examples: [
@@ -31,12 +32,13 @@ export default {
             fontFamily: "Luckiest Guy",
           },
           scale: {
-            domain: [0, 200],
+            progress: 0.9,
+            domain: [0, 1],
             range: {
-              width: [],
-              height: [],
-              x: [],
-              y: [],
+              width: ["0%", "100%"],
+              height: ["0%", "100%"],
+              x: ["0%", "0%"],
+              y: ["0%", "0%"],
             },
           },
         },

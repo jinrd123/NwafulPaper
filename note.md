@@ -60,3 +60,29 @@ Vue.use(MenuItem);
   </screen>
 </scale>
 ~~~
+
+# 7.Scale组件处理props接收的数据
+
+props接受的数据width、height、x、y都是用数组表示的范围，我们在Scale组件中定义计算属性current，希望结合props接收的另外两个属性（progress、domain）得到一个对象，属性width、height、x、y值为具体值。
+
+虽然暂时不明白计算的准确意义，但是current计算属性的实现还是有所收获的——**将一个对象加工处理成另一个（同属性名、不同值）对象**。
+
+~~~js
+current: function () {
+  /*
+  	this.data.range是一个对象，Object.keys获取其属性名的数组
+  	利用数组的reduce方法重新构造一个对象：
+  		一般reduce方法用来求和，我们把reduce的初始值也就是第二个参数设为{}，遍历方法
+  		也就是第一个参数的函数体，每次为空对象添加一个属性
+  */
+  return Object.keys(this.data.range).reduce((obj, key) => {
+    const [r0, r1] = this.data.range[key];//数组的解构赋值（对应位置进行赋值），得到
+    /*
+    	对属性key进行加工，得到key的值
+    */
+    obj[key] = ...;
+    return obj;
+  }, {});
+},
+~~~
+

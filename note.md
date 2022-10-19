@@ -46,3 +46,17 @@ Vue.use(MenuItem);
 # 5.Screen组件
 
 类似于Scale组件的作用，做一个组件外框
+
+# 6.Home页面基本结构
+
+~~~html
+<scale
+  v-for="example in examples"
+  :key="example.type"
+  :data="example.scale"
+>
+  <screen :type="examples.type">
+    <wallpaper :data="example.data" />
+  </screen>
+</scale>
+~~~

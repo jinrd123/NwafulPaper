@@ -1,7 +1,9 @@
 <template>
   <div id="app">
     <NavHeader />
-    <router-view></router-view>
+    <keep-alive>
+      <router-view></router-view>
+    </keep-alive>
   </div>
 </template>
 
@@ -11,7 +13,7 @@ export default {
   name: "App",
   components: {
     NavHeader,
-  }
+  },
 };
 </script>
 
@@ -36,7 +38,6 @@ body {
 @font-face {
   font-family: "庞门正道粗书体";
   font-weight: 400;
-  src: 
-    url(~@/assets/font/庞门正道粗书体.ttf) format("truetype");
+  src: url(~@/assets/font/庞门正道粗书体.ttf) format("truetype");
 }
 </style>

@@ -202,3 +202,6 @@ computed: {
 ## Home组件结构与逻辑：
 
 使用上面定义的两个混入，useWindowScroll混入维护的滚动程度变量scrollY的作用是动态关联`progress`；useWindowSize混入维护的浏览器大小数据windowWidth用来动态关联传递给<scale>的`to`对象，让缩小至最小时<scale>无论浏览器多大，始终处于中心位置。
+
+# 9.<keep-alive>缓存导航列表里对应的几个路由组件，防止路由组件的销魂
+

@@ -2,11 +2,13 @@
   <div>
     <h1>Home</h1>
     <scale
-      v-for="example in examples"
+      v-for="(example, index) in examples"
       :key="example.type"
-      :data="example.scale"
+      :from="dimensions[index].from"
+      :to="dimensions[index].to"
+      :progress="progress"
     >
-      <screen :type="examples.type">
+      <screen :type="example.type">
         <wallpaper :data="example.data" />
       </screen>
     </scale>
@@ -17,8 +19,13 @@
 import Wallpaper from "@/components/Wallpaper";
 import Scale from "@/components/Scale";
 import Screen from "@/components/Screen";
+import { useWindowScroll } from "@/mixins/useWindowScroll";
+import { useWindowSize } from "@/mixins/useWindowSize";
+import { map } from "@/utils/math";
+const [MIN_Y, MAX_Y] = [0, 200];
 export default {
-  name: 'Home',
+  name: "Home",
+  mixins: [useWindowScroll(MIN_Y, MAX_Y), useWindowSize()],
   data() {
     return {
       examples: [
@@ -28,18 +35,8 @@ export default {
             title: "How are you?",
             bgColor: "#132743",
             textColor: "#d7385e",
-            fontSize: 280,
+            fontSize: 230,
             fontFamily: "Luckiest Guy",
-          },
-          scale: {
-            progress: 0.9,
-            domain: [0, 1],
-            range: {
-              width: ["0%", "100%"],
-              height: ["0%", "100%"],
-              x: ["0%", "0%"],
-              y: ["0%", "0%"],
-            },
           },
         },
       ],
@@ -49,6 +46,30 @@ export default {
     Wallpaper,
     Scale,
     Screen,
+  },
+  computed: {
+    progress: function () {
+      return map(this.scrollY, MIN_Y, MAX_Y, 0, 1);
+    },
+    dimensions: function () {
+      const scale = 0.5;
+      return [
+        {
+          from: {
+            x: 0,
+            y: 0,
+            width: this.windowWidth,
+            height: this.windowHeight,
+          },
+          to: {
+            width: this.windowWidth * scale,
+            height: this.windowHeight * scale,
+            x: (this.windowWidth * (1 - scale)) / 2,
+            y: this.windowHeight - 100 - this.windowHeight * scale,
+          },
+        },
+      ];
+    },
   },
 };
 </script>

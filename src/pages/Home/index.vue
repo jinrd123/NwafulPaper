@@ -9,7 +9,7 @@
       :progress="progress"
     >
       <screen :type="example.type">
-        <wallpaper :data="example.data" />
+        <wallpaper :data="example.data" :width="dimensions[index].from.width" :height="dimensions[index].from.height"/>
       </screen>
     </scale>
   </div>
@@ -35,7 +35,7 @@ export default {
             title: "How are you?",
             bgColor: "#132743",
             textColor: "#d7385e",
-            fontSize: 230,
+            fontSize: 130,
             fontFamily: "Luckiest Guy",
           },
         },

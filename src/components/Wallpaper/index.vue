@@ -1,20 +1,13 @@
 <template>
-  <div class="container" :style="{ background: data.bgColor }">
-    <p
-      :style="{
-        fontSize: data.fontSize + 'px',
-        fontFamily: data.fontFamily,
-        color: data.textColor,
-        fontWeight: 'bold',
-      }"
-    >
-      {{ data.title }}
-    </p>
+  <div class="cantainer">
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 
 <script>
+import { drawColorWords } from "@/utils/canvas.js";
 export default {
+  name: "Wallpaper",
   props: {
     data: {
       title: String,
@@ -22,6 +15,30 @@ export default {
       fontSize: Number,
       fontFamily: String,
       textColor: String,
+    },
+    width: Number,
+    height: Number,
+  },
+  mounted() {
+    this.render();
+  },
+  methods: {
+    render() {
+      drawColorWords(this.$refs.canvas, this.width, this.height, this.data);
+    },
+  },
+  watch: {
+    data: {
+      deep: true,
+      handler() {
+        this.render();
+      },
+    },
+    width() {
+      this.render();
+    },
+    height() {
+      this.render();
     },
   },
 };

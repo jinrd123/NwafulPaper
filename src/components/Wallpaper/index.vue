@@ -8,13 +8,19 @@
 import { drawColorWords } from "@/utils/canvas.js";
 export default {
   name: "Wallpaper",
+  data() {
+    return {
+      fontFace: undefined,
+    }
+  },
   props: {
-    data: {
+    options: {
       title: String,
       bgColor: String,
       fontSize: Number,
       fontFamily: String,
       textColor: String,
+      fontURL: String,
     },
     width: Number,
     height: Number,
@@ -23,12 +29,16 @@ export default {
     this.render();
   },
   methods: {
-    render() {
-      drawColorWords(this.$refs.canvas, this.width, this.height, this.data);
+    async render() {
+      await this.loadFont();
+      drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+    },
+    async loadFont() {
+      this.fontFace = await new FontFace(this.options.fontFamily, `url(${this.options.fontURL})`).load();
     },
   },
   watch: {
-    data: {
+    options: {
       deep: true,
       handler() {
         this.render();

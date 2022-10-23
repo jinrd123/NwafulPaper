@@ -212,3 +212,23 @@ computed: {
 ## 存在bug：
 
 目前在Home组件中给Wallpaper组件传的配置项指定的字体是我们在App.vue的<style>中用`@font-face`自定义的字体，首次进入项目页面，或者进入项目页面后刷新，canvas绘制文字时字体不生效，一旦页面大小改变（Wallpaper中用watch监视了props属性的改变，会重新调用`render`方法），也就是再次调用`render`方法，字体就会立即生效。也就是说`mounted`中调用`render`函数时没能成功使用自定义字体。怀疑原因是`@font-face`自定义的字体并不是定义了就直接加载，而是在应用时动态加载，所以我认为是第一次调用`render`时初次使用自定义的字体，这时候自定义字体还没有加载成功，我们就进行了<canvas>的绘制，所以没有生效。当以后再调用`render`方法时字体已加载完毕，就可以正常绘制了。
+
+## 解决bug：
+
+我们只需保证每次渲染时执行`drawColorWords`之前字体已经加载完毕即可。`new FontFace`返回一个字体对象，字体对象的方法`load`根据字体是否已经加载成功返回`Promise`对象，**这里的加载成功是建立在@font-face自定义字体基础之上的，所谓加载成功就是指执行了@font-face，所以new FontFace不能脱离@font-face独立存在，App.vue中的@font-face不可删除**。如果字体加载成功，返回的`Promise`成功的原因就是这个字体对象，加载失败返回什么就不重要了。
+
+我们只需要每次渲染时执行`drawColorWords`之前`await new FontFace().load()`即可保证字体加载完毕。
+
+### FontFace：
+
+FontFace构造函数，接收三个参数
+
+* 第一个参数，字体名（要与对应的`@font-face`的字体名一致）
+* 第二个参数，`url()`，url内写字体资源文件，目前项目中我们通过`import fontUrl from 字体文件`的方式获得url的内容（这个也和`@font-face`中url指向的文件一致）
+* 第三个参数，字体配置对象，暂时项目中未用到。
+
+FontFace对象的方法：`load`，根据字体是否加载成功返回Promise。
+
+### 留下优化思路：
+
+其实只有props数据发生改变进行`render`时才需要重新加载字体，而监听屏幕大小的改变时调用`render`函数，此时字体并没有改变，所以`render`中没必要`await new FontFace().load()`

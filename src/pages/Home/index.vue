@@ -9,7 +9,7 @@
       :progress="progress"
     >
       <screen :type="example.type">
-        <wallpaper :data="example.data" :width="dimensions[index].from.width" :height="dimensions[index].from.height"/>
+        <wallpaper :options="example.options" :width="dimensions[index].from.width" :height="dimensions[index].from.height"/>
       </screen>
     </scale>
   </div>
@@ -22,6 +22,7 @@ import Screen from "@/components/Screen";
 import { useWindowScroll } from "@/mixins/useWindowScroll";
 import { useWindowSize } from "@/mixins/useWindowSize";
 import { map } from "@/utils/math";
+import fontURL from "@/assets/font/LuckiestGuy.woff2";
 const [MIN_Y, MAX_Y] = [0, 200];
 export default {
   name: "Home",
@@ -31,12 +32,13 @@ export default {
       examples: [
         {
           type: "mac",
-          data: {
+          options: {
             title: "How are you?",
             bgColor: "#132743",
             textColor: "#d7385e",
             fontSize: 130,
             fontFamily: "Luckiest Guy",
+            fontURL,
           },
         },
       ],

@@ -450,3 +450,29 @@ function transformMatrix(dpr, rotation) {
 ~~~
 
 这样经过 画线+旋转（创建一个canvas上面画线，然后用这个canvas创建填充样式，让后让填充样式旋转变换），在`createPattern`函数中，我们就获得了一种`fillStyle`。`chooseFillStyle`函数中把背景和文字的fillStyle对象返回给`drawWords`函数，然后就是简单的填充样式设置之后的渲染了。
+
+# 12.canvas画质优化
+
+曾经创建canvas时直接`canvas.height = height`，`canvas.width = width`。这样相当于创建的canvas独立像素（canvas学习笔记相关概念）就是width*height的。**单位空间内（这个空间是指周围的dom形成的参照大小）canvas独立像素的多少决定了canvas的视觉清晰度**
+
+~~~js
+export function createContext(canvas, width, height) {
+  /*
+  	我们创建2width*2height独立像素的canvas
+  	与之对应canvas的宽高（相对于周围dom）也变成了原来的2倍
+  	我们需要canvas的相对dom的大小还是width*height的效果，就用过canvas.style.width去设置，设置为width*height(px)，就完成了在width*height(px)的dom空间内canvas有了更多的独立像素
+  	但由于canvas绘制时的坐标以及长短都是基于独立像素的，所以要想处理后的canvas坐标与原来的canvas视觉效果统一，还需要执行context.scale(2, 2);
+  */
+  canvas.height = height * 2;
+  canvas.width = width * 2;
+  canvas.style.width = width + "px";
+  canvas.style.height = height + "px";
+  const context = canvas.getContext("2d");
+  context.scale(2, 2);
+  return context;
+}
+~~~
+
+## `createPattern`封装方法中调用`transformMatrix`第一个参数的传值为2：
+
+其实通过createPattern原生方法创建的`fillStyle`也是基与canvas独立单位填充时进行覆盖的。因为我们创建的canvas是独立像素在x和y方向都是2倍“密度”，所以进行transform修改pattern变换矩阵（同canvas变换矩阵）时a、b、c、d都除2。（由canvas学习笔记可知这个都除2的操作相当于canvas（pattern）缩放，让背景的线条更密集）。详细原理不很清楚（为什么时除2不是乘2，不清楚填充时fillStyle与canvas的匹配机制是px对应还是独立单位对应），但对应关系一定是这样。

@@ -1,8 +1,12 @@
 export function createContext(canvas, width, height) {
-    canvas.width = width;
-    canvas.height = height;
+    canvas.height = height * 2;
+    canvas.width = width * 2;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
     canvas.style.border = "1px solid #000";
-    return canvas.getContext("2d");
+    const context = canvas.getContext("2d");
+    context.scale(2, 2);
+    return context;
 }
 export function drawWords(type, canvas, width, height, { fontSize, background, text, title, fontFamily }) {
     let context = createContext(canvas, width, height);

@@ -5,7 +5,8 @@
 </template>
 
 <script>
-import { drawColorWords, drawPatternWords } from "@/utils/canvas.js";
+import { drawColorWords, drawPatternWords } from "@/utils/words";
+
 export default {
   name: "Wallpaper",
   data() {

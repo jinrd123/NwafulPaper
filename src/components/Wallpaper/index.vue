@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { drawColorWords } from "@/utils/canvas.js";
+import { drawColorWords, drawPatternWords } from "@/utils/canvas.js";
 export default {
   name: "Wallpaper",
   data() {
@@ -16,14 +16,18 @@ export default {
   props: {
     options: {
       title: String,
-      bgColor: String,
+      background: [String, Object],
       fontSize: Number,
-      fontFamily: String,
-      textColor: String,
+      fontFamily: {
+        type: String,
+        default: "Luckiest Guy"
+      },
+      text: [String, Object],
       fontURL: String,
     },
     width: Number,
     height: Number,
+    mode: String,
   },
   mounted() {
     this.render();
@@ -31,7 +35,14 @@ export default {
   methods: {
     async render() {
       await this.loadFont();
-      drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+      switch (this.mode) {
+        case "color":
+          drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+          break;
+        case "pattern":
+          drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
+          break;
+      }
     },
     async loadFont() {
       this.fontFace = await new FontFace(this.options.fontFamily, `url(${this.options.fontURL})`).load();

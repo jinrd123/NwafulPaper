@@ -1,15 +1,14 @@
 <template>
   <div>
     <h1>Home</h1>
-    <scale
-      v-for="(example, index) in examples"
-      :key="example.type"
-      :from="dimensions[index].from"
-      :to="dimensions[index].to"
-      :progress="progress"
-    >
-      <screen :type="example.type">
-        <wallpaper :options="example.options" :width="dimensions[index].from.width" :height="dimensions[index].from.height"/>
+    <scale :from="dimension.from" :to="dimension.to" :progress="progress">
+      <screen>
+        <wallpaper
+          :options="example"
+          :width="dimension.from.width"
+          :height="dimension.from.height"
+          :mode="mode"
+        />
       </screen>
     </scale>
   </div>
@@ -29,19 +28,7 @@ export default {
   mixins: [useWindowScroll(MIN_Y, MAX_Y), useWindowSize()],
   data() {
     return {
-      examples: [
-        {
-          type: "mac",
-          options: {
-            title: "How are you?",
-            bgColor: "#132743",
-            textColor: "#d7385e",
-            fontSize: 130,
-            fontFamily: "Luckiest Guy",
-            fontURL,
-          },
-        },
-      ],
+      mode: "pattern",
     };
   },
   components: {
@@ -53,24 +40,57 @@ export default {
     progress: function () {
       return map(this.scrollY, MIN_Y, MAX_Y, 0, 1);
     },
-    dimensions: function () {
+    dimension() {
       const scale = 0.5;
-      return [
-        {
-          from: {
-            x: 0,
-            y: 0,
-            width: this.windowWidth,
-            height: this.windowHeight,
-          },
-          to: {
-            width: this.windowWidth * scale,
-            height: this.windowHeight * scale,
-            x: (this.windowWidth * (1 - scale)) / 2,
-            y: this.windowHeight - 100 - this.windowHeight * scale,
-          },
+      return {
+        from: {
+          x: 0,
+          y: 0,
+          width: this.windowWidth,
+          height: this.windowHeight,
         },
-      ];
+        to: {
+          width: this.windowWidth * scale,
+          height: this.windowHeight * scale,
+          x: (this.windowWidth * (1 - scale)) / 2,
+          y: this.windowHeight - 100 - this.windowHeight * scale,
+        },
+      };
+    },
+    example() {
+      const options = {
+        title: "How are you?",
+        fontSize: 230,
+        fontFamily: "Luckiest Guy",
+        fontURL,
+      };
+      if (this.mode === "color") {
+        return {
+          ...options,
+          background: "#132743",
+          text: "#d7385e",
+        };
+      } else if (this.mode === "pattern") {
+        return {
+          ...options,
+          background: {
+            backgroundColor: "white",
+            patternColor: "#ddd",
+            type: "line",
+          },
+          text: {
+            backgroundColor: "#89E089",
+            patternColor: "currentColor",
+            type: "line",
+            rotation: -45,
+          },
+        };
+      } else {
+        return {
+          ...options,
+          imageURL: "",
+        };
+      }
     },
   },
 };

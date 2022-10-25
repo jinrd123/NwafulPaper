@@ -232,3 +232,221 @@ FontFace对象的方法：`load`，根据字体是否加载成功返回Promise�
 ### 留下优化思路：
 
 其实只有props数据发生改变进行`render`时才需要重新加载字体，而监听屏幕大小的改变时调用`render`函数，此时字体并没有改变，所以`render`中没必要`await new FontFace().load()`
+
+# 11.Wallpaper增加pattern渲染模式
+
+以前Wallpaper的props接受的bgcolor和textcolor分别对应背景颜色和文字颜色，`fillStyle`设置为对应的颜色然后填充背景和文字即可。这种渲染模式记为`color`渲染模式。在Wallpaper的props增加mode属性进行标识。
+
+现在拓展mode的pattern模式。说白了就是在canvas进行填充背景和文字时设置`fillStyle`不是单纯的颜色，而是用`ctx.createPattern`创建的`fillStyle`。
+
+对于pattern渲染模式，Wallpaper接收`background`和`text`属性从单一颜色拓展为对象类型：
+
+~~~js
+background: {
+    backgroundColor: "white",
+    type: "line",
+    patternColor: "#ddd",//线条颜色
+    rotation: -45,//线条旋转
+},
+~~~
+
+Wallpaper中的`render`函数根据`mode`属性进行不同模式的渲染：
+
+~~~js
+async render() {
+  await this.loadFont();
+  switch (this.mode) {
+    case "color":
+      drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+      break;
+    case "pattern":
+      drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
+      break;
+  }
+},
+~~~
+
+核心就在于`drawPatternWords`如何实现的：
+
+说白了我们和曾经的`color`渲染模式的区别就在于一个`fillStyle`的构造。
+
+接下来从Wallpaper开始走一遍渲染流程：
+
+~~~js
+async render() {
+      await this.loadFont();
+      /*
+      	Wallpaper组件props接收的mode参数值为"pattern"决定了进行pattern渲染，执行drawPatternWords
+      */
+      switch (this.mode) {
+        case "color":
+          drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+          break;
+        case "pattern":
+          drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
+          break;
+      }
+    },
+~~~
+
+进入`@/utils/canvas.js`的`drawPatternWords`方法：
+
+~~~js
+/*
+	说白了drawPatternWords的作用就是一个语义化的连接drawWords的中间函数
+*/
+export function drawPatternWords(...args) {
+    drawWords("pattern", ...args);
+}
+~~~
+
+`function drawWords`：
+
+~~~js
+/*
+	说白了我们绘制的核心逻辑就是两步：先填充矩形给整个canvas渲染背景，再填充文字渲染内容,具体不同的绘制模式就是决定了fillStyle的不同
+	所以我们下面需要chooseFillStyle函数获得不用模式的填充样式fillStyle
+*/
+export function drawWords(type, canvas, width, height, { fontSize, background, text, title, fontFamily }) {
+    let context = createContext(canvas, width, height);
+    /*
+    	进入chooseFillStyle获取type渲染类型（"pattern"）的填充样式
+    */
+    const { backgroundFillStyle, textFillStyle } = chooseFillStyle(type, {
+        background,
+        text,
+        context,
+    });
+    context.beginPath();
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = `${fontSize}px ${fontFamily}`;
+    /*
+    	设置填充样式fillStyle之后渲染背景
+    */
+    context.fillStyle = backgroundFillStyle;
+    context.fillRect(0, 0, width, height);
+    /*
+    	设置填充样式fillStyle之后渲染文字
+    */
+    context.fillStyle = textFillStyle;
+    context.fillText(title, width / 2, height / 2);
+}
+~~~
+
+`function chooseFillStyle`：
+
+~~~js
+function chooseFillStyle(type, { background, text, context }) {
+    /*
+    	对于color渲染模式，当初Wallpaper组件接收的background和text值就是单纯的一个颜色值，直接返回这个颜色值作为填充背景即可
+    */
+    if (type === "color") {
+        return {
+            backgroundFillStyle: background,
+            textFillStyle: text,
+        };
+    /*
+    	对于pattern渲染模式，说白了核心就是利用canvas原生方法ctx.createPattern创建一个填充样式，createPattern方法封装了原生方法ctx.createPattern，这里我们进入createPattern方法
+    */
+    } else if (type === "pattern") {
+        return {
+            backgroundFillStyle: createPattern(context, background),
+            textFillStyle: createPattern(context, text),
+        };
+    }
+}
+~~~
+
+`createPattern`：
+
+~~~js
+function createPattern(
+    containerContext,
+    { type, width = 50, height = 50, rotation = 0, ...options }
+) {
+    /*
+    	createPattern的核心逻辑是对containerContext.createPattern这个原生获取填充样式的方法进行封装
+    	这个原生方法的第一个参数可以是image或者canvas，第二个参数为重复方式。
+    	对于pattern渲染模式，我们使用canvas去构造填充样式。
+    	pattern模式下Wallpaper接收的background和text是一个对象，其中的type属性决定了我们构造canvas的样式，type为"line"时，background或者text对象的几个属性为：
+    	    type: "line",
+    		backgroundColor: "#89E089",
+            patternColor: "currentColor",
+            rotation: -45,
+        这几个属性属于background或者text（两者自己的对象就包含四个属性），我们利用这几个属性去绘制一个canvas，这个canvas是用来做containerContext.createPattern方法的第一个参数的
+    */
+        
+    /*
+    	下面就是构建做containerContext.createPattern方法的第一个参数的canvas
+    	line函数就是给新创建的canvas画线条，背景颜色对应backgroundColor，线条颜色对应patternColor，下面进入line函数
+    */
+    const canvas = document.createElement("canvas");
+    const context = createContext(canvas, width, height);
+
+    switch (type) {
+        case "line":
+            line(context, width, height, options);
+            break;
+    }
+
+    /*
+    	用上面构造的canvas给ctx.createPattern创建一个填充样式
+    */
+    const pattern = containerContext.createPattern(canvas, "repeat");
+    /*
+    	pattern.setTransform，原生方法，修改fillStyle的变换矩阵（类似于canvas的transform方法）
+    */
+    const matrix = transformMatrix(2, rotation);
+    pattern.setTransform(matrix);
+
+    return pattern;
+}
+~~~
+
+（line函数进行线条绘制/pattern.setTransform进行canvas旋转变换）
+
+line函数进行线条绘制：
+
+`function line`：
+
+~~~js
+function line(context, width, height, { backgroundColor, patternColor }) {
+    /*
+    	line函数只是把canvas背景绘制成backgroundColor颜色，垂直画一个颜色为patternColor的线条
+    	旋转相关的效果在上面createPattern函数中进行处理
+    */
+    context.fillStyle = backgroundColor;
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = patternColor;
+    context.beginPath();
+    context.moveTo(50, 0);
+    context.lineTo(50, 50);
+    context.stroke();
+}
+~~~
+
+pattern.setTransform进行canvas旋转变换：
+
+`transformMatrix`：
+
+~~~js
+/*
+	构造pattern.setTransform(matrix)的matrix参数，pattern.setTransform和ctx.transform方法参数类似，但pattern.setTransform参数是以一个数组形式，参数意义完全相同，只是格式不同。
+	暂且先忽略dpr的值，其实abcd这样设置就等价于旋转变化用transform来表示而已（可回顾canvas学习笔记）。
+*/
+function transformMatrix(dpr, rotation) {
+    const radian = (rotation * Math.PI) / 180;
+    const matrix = {
+        a: Math.cos(radian) * (1 / dpr),
+        b: Math.sin(radian) * (1 / dpr),
+        c: -Math.sin(radian) * (1 / dpr),
+        d: Math.cos(radian) * (1 / dpr),
+        e: 0,
+        f: 0,
+    };
+    return matrix;
+}
+~~~
+
+这样经过 画线+旋转（创建一个canvas上面画线，然后用这个canvas创建填充样式，让后让填充样式旋转变换），在`createPattern`函数中，我们就获得了一种`fillStyle`。`chooseFillStyle`函数中把背景和文字的fillStyle对象返回给`drawWords`函数，然后就是简单的填充样式设置之后的渲染了。

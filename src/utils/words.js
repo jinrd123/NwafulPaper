@@ -1,12 +1,32 @@
 import { createPattern } from "./pattern";
 import { createContext } from "./canvas";
 
-export function drawColorWords(...args) {
-    drawWords("color", ...args);
+export function drawColorWords(
+    canvas,
+    width,
+    height,
+    { background, text, ...options }
+) {
+    const context = createContext(canvas, width, height);
+    drawBackgroundWords(context, width, height, {
+        ...options,
+        backgroundStyle: background,
+        textStyle: text,
+    });
 }
 
-export function drawPatternWords(...args) {
-    drawWords("pattern", ...args);
+export function drawPatternWords(
+    canvas,
+    width,
+    height,
+    { background, text, ...options }
+) {
+    const context = createContext(canvas, width, height);
+    drawBackgroundWords(context, width, height, {
+        ...options,
+        backgroundStyle: createPattern(context, background),
+        textStyle: createPattern(context, text),
+    });
 }
 
 export function drawImageWords(
@@ -14,14 +34,29 @@ export function drawImageWords(
     width,
     height,
     { fontSize, fontFamily, title, text, image }
-  ) {
+) {
     const context = createContext(canvas, width, height);
     drawImage(context, image, width, height);
     drawTitle(context, title, width, height, text, fontSize, fontFamily);
 }
 
+function drawBackgroundWords(
+    context,
+    width,
+    height,
+    { fontSize, fontFamily, title, backgroundStyle, textStyle }
+) {
+    drawBackground(context, width, height, backgroundStyle);
+    drawTitle(context, title, width, height, textStyle, fontSize, fontFamily);
+}
+
 function drawImage(context, image, width, height) {
     context.drawImage(image, 0, 0, width, height);
+}
+
+function drawBackground(context, width, height, style) {
+    context.fillStyle = style;
+    context.fillRect(0, 0, width, height);
 }
 
 function drawTitle(context, title, width, height, text, fontSize, fontFamily) {
@@ -32,34 +67,4 @@ function drawTitle(context, title, width, height, text, fontSize, fontFamily) {
     context.fillText(title, width / 2, height / 2);
 }
 
-export function drawWords(type, canvas, width, height, { fontSize, background, text, title, fontFamily }) {
-    let context = createContext(canvas, width, height);
-    const { backgroundFillStyle, textFillStyle } = chooseFillStyle(type, {
-        background,
-        text,
-        context,
-    });
-    context.beginPath();
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.font = `${fontSize}px ${fontFamily}`;
-    context.fillStyle = backgroundFillStyle;
-    context.fillRect(0, 0, width, height);
-    context.fillStyle = textFillStyle;
-    context.fillText(title, width / 2, height / 2);
-}
-
-function chooseFillStyle(type, { background, text, context }) {
-    if (type === "color") {
-        return {
-            backgroundFillStyle: background,
-            textFillStyle: text,
-        };
-    } else if (type === "pattern") {
-        return {
-            backgroundFillStyle: createPattern(context, background),
-            textFillStyle: createPattern(context, text),
-        };
-    }
-}
 

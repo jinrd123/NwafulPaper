@@ -28,7 +28,7 @@ export default {
   mixins: [useWindowScroll(MIN_Y, MAX_Y), useWindowSize()],
   data() {
     return {
-      mode: "pattern",
+      mode: "image",
     };
   },
   components: {
@@ -88,7 +88,8 @@ export default {
       } else {
         return {
           ...options,
-          imageURL: "",
+          imageURL: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg",
+          text: "#fff",
         };
       }
     },

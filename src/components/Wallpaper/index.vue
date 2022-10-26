@@ -5,13 +5,14 @@
 </template>
 
 <script>
-import { drawColorWords, drawPatternWords } from "@/utils/words";
+import { drawColorWords, drawPatternWords, drawImageWords } from "@/utils/words";
 
 export default {
   name: "Wallpaper",
   data() {
     return {
       fontFace: undefined,
+      image: undefined,
     }
   },
   props: {
@@ -25,6 +26,7 @@ export default {
       },
       text: [String, Object],
       fontURL: String,
+      imageURL: String,
     },
     width: Number,
     height: Number,
@@ -43,11 +45,24 @@ export default {
         case "pattern":
           drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
           break;
+        case "image":
+          await this.loadImage();
+          drawImageWords(this.$refs.canvas, this.width, this.height, { ...this.options, image: this.image });
+          break;
       }
     },
     async loadFont() {
       this.fontFace = await new FontFace(this.options.fontFamily, `url(${this.options.fontURL})`).load();
     },
+    async loadImage() {
+      this.image = await new Promise((resolve)=>{
+        const newImage = new Image();
+        newImage.src = this.options.imageURL;
+        newImage.onload = function() {
+          resolve(newImage);
+        }
+      })
+    }
   },
   watch: {
     options: {

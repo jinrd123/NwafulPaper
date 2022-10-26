@@ -476,3 +476,65 @@ export function createContext(canvas, width, height) {
 ## `createPattern`封装方法中调用`transformMatrix`第一个参数的传值为2：
 
 其实通过createPattern原生方法创建的`fillStyle`也是基与canvas独立单位填充时进行覆盖的。因为我们创建的canvas是独立像素在x和y方向都是2倍“密度”，所以进行transform修改pattern变换矩阵（同canvas变换矩阵）时a、b、c、d都除2。（由canvas学习笔记可知这个都除2的操作相当于canvas（pattern）缩放，让背景的线条更密集）。详细原理不很清楚（为什么时除2不是乘2，不清楚填充时fillStyle与canvas的匹配机制是px对应还是独立单位对应），但对应关系一定是这样。
+
+# 13.Wallpaper增加image渲染模式
+
+`drawImageWords`的绘制逻辑就是先执行`context.drawImage(image, 0, 0, width, height);`绘制图片作为背景，然后再在canvas中心绘制文本即可。
+
+在执行`drawImageWords`之前，需要图片已经加载完毕
+
+~~~js
+async render() {
+  await this.loadFont();
+  switch (this.mode) {
+    case "color":
+      drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+      break;
+    case "pattern":
+      drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
+      break;
+    case "image":
+      /*
+      	用await等待loadImage函数执行完毕
+      */
+      await this.loadImage();
+      drawImageWords(this.$refs.canvas, this.width, this.height, { ...this.options, image: this.image });
+      break;
+  }
+},
+~~~
+
+`loadImage`函数我认为写的就很精妙：需要充分理解`await`的作用：**等待await后面的函数执行完毕才继续执行后文代码**。
+
+我们的目标就是希望image对象完全加载（表现就是执行onload函数），所以我们等待图片的生命周期onload函数执行完毕的代码：
+
+~~~js
+await new Promise((resolve) => {
+    image.onload = function() {
+        resolve(image);
+    }
+})
+~~~
+
+~~~js
+async loadImage() {
+  this.image = await new Promise((resolve)=>{
+    const newImage = new Image();
+    newImage.src = this.options.imageURL;
+    newImage.onload = function() {
+      resolve(newImage);
+    }
+  })
+}
+~~~
+
+**我认为这也是一个模板型的代码：等待某些资源的某个生命周期（这个生命周期最好有相关的回调函数）：**
+
+~~~js
+await new Promise((resolve) => {
+    资源.生命周期函数(){
+        resolve()
+    }	
+})
+~~~
+

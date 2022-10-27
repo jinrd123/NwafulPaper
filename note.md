@@ -538,3 +538,34 @@ await new Promise((resolve) => {
 })
 ~~~
 
+# 14.背景用图片进行绘制时进行canvas与image的大小匹配
+
+我们的目标是在canvas上绘制图片时，在不对图片进行改变宽高比的拉伸的情况下，尽可能多的展示出来图片的内容。
+
+`context.drawImage(image, sx, sy, sw, sh, 0, 0, width, height)`，说白了我们就是要裁剪图片，也就是确定`sw`和`sh`
+
+先比较图片和canvas的宽高比，如果canvas比较宽，那我们就以图片的宽为主：`sw = imageWidth`，这是为了尽可能多的展示出来图片的内容。
+
+我们毕竟是要把图片渲染到canvas上，为了保证不改变呈现出来的图片的宽高比，就是要保证大小为`sw*sh`的图片和canvas的宽高比相同，我们令`sh = sw * contextAspect`。这样就保证执行`ctx.drawImage`时`sw*sh`的图片绘制到`width*height`的canvas上是等比例缩放。
+
+~~~js
+function drawImage(context, image, width, height) {
+    const { width: imageWidth, height: imageHeight } = image;
+    const imageAspect = imageHeight / imageWidth;
+    const contextAspect = height / width;
+    let sw, sh;
+    if (imageAspect > contextAspect) {
+        sw = imageWidth;
+        sh = sw * contextAspect;
+    } else {
+        sh = imageHeight;
+        sw = sh / contextAspect;
+    }
+    const sx = (imageWidth - sw) / 2;
+    const sy = (imageHeight - sh) / 2;
+    context.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
+}
+~~~
+
+其实这个适配算法的形象理解为：我们脑中想象，让图片缩小至完全在canvas内部的中心位置（此时图片的两条对边紧贴canvas的两条边，具体是宽边紧贴还是高边紧贴那就和图片和canvas的宽高比有关了），我们想在canvas上呈现出来的图片的部分，就是：此时把图片等比例放大，直至另外两个在canvas内部的图片的对边紧贴canvas，此时canvas内部的图片部分，就是我们需要绘制的部分。
+

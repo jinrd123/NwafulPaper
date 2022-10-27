@@ -51,7 +51,20 @@ function drawBackgroundWords(
 }
 
 function drawImage(context, image, width, height) {
-    context.drawImage(image, 0, 0, width, height);
+    const { width: imageWidth, height: imageHeight } = image;
+    const imageAspect = imageHeight / imageWidth;
+    const contextAspect = height / width;
+    let sw, sh;
+    if (imageAspect > contextAspect) {
+        sw = imageWidth;
+        sh = sw * contextAspect;
+    } else {
+        sh = imageHeight;
+        sw = sh / contextAspect;
+    }
+    const sx = (imageWidth - sw) / 2;
+    const sy = (imageHeight - sh) / 2;
+    context.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
 }
 
 function drawBackground(context, width, height, style) {

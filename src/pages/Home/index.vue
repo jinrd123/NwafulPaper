@@ -1,27 +1,40 @@
 <template>
   <div>
     <h1>Home</h1>
-    <scale :from="dimension.from" :to="dimension.to" :progress="progress">
-      <screen>
+    <div
+      class="example"
+      :style="{
+        left: transformed.x + 'px',
+        top: transformed.y + 'px',
+        transform: `scale(${transformed.scale}, ${transformed.scale})`,
+        transformOrigin: 'left top',
+      }"
+    >
+      <screen
+        :src="screenURL"
+        :meta="screenMeta"
+        :width="transformed.width"
+        :height="transformed.height"
+      >
         <wallpaper
           :options="example"
-          :width="dimension.from.width"
-          :height="dimension.from.height"
+          :width="transformed.width"
+          :height="transformed.height"
           :mode="mode"
         />
       </screen>
-    </scale>
+    </div>
   </div>
 </template>
 
 <script>
 import Wallpaper from "@/components/Wallpaper";
-import Scale from "@/components/Scale";
 import Screen from "@/components/Screen";
 import { useWindowScroll } from "@/mixins/useWindowScroll";
 import { useWindowSize } from "@/mixins/useWindowSize";
 import { map } from "@/utils/math";
 import fontURL from "@/assets/font/LuckiestGuy.woff2";
+import screenURL from "@/assets/images/mac.png";
 const [MIN_Y, MAX_Y] = [0, 200];
 export default {
   name: "Home",
@@ -29,11 +42,19 @@ export default {
   data() {
     return {
       mode: "image",
+      screenURL,
+      screenMeta: {
+        left: 145,
+        right: 145,
+        top: 45,
+        bottom: 85,
+        width: 1211,
+        height: 707,
+      },
     };
   },
   components: {
     Wallpaper,
-    Scale,
     Screen,
   },
   computed: {
@@ -42,36 +63,57 @@ export default {
     },
     dimension() {
       const scale = 0.5;
+      const bottom = 150;
+      const macAspect = 0.625;
       return {
         from: {
           x: 0,
           y: 0,
           width: this.windowWidth,
           height: this.windowHeight,
+          scale: 1,
         },
         to: {
-          width: this.windowWidth * scale,
-          height: this.windowHeight * scale,
+          width: this.windowWidth,
+          height: this.windowWidth * macAspect,
           x: (this.windowWidth * (1 - scale)) / 2,
-          y: this.windowHeight - 100 - this.windowHeight * scale,
+          y: this.windowHeight - this.windowWidth * macAspect * scale - bottom,
+          scale,
         },
+      };
+    },
+    transformed() {
+      const { from, to } = this.dimension;
+      const {
+        x: fromX,
+        y: fromY,
+        width: fromW,
+        height: fromH,
+        scale: fromS,
+      } = from;
+      const { x: toX, y: toY, width: toW, height: toH, scale: toS } = to;
+      return {
+        x: map(this.progress, 0, 1, fromX, toX),
+        y: map(this.progress, 0, 1, fromY, toY),
+        width: map(this.progress, 0, 1, fromW, toW),
+        height: map(this.progress, 0, 1, fromH, toH),
+        scale: map(this.progress, 0, 1, fromS, toS),
       };
     },
     example() {
       const options = {
         title: "How are you?",
-        fontSize: 230,
+        fontSize: 200,
         fontFamily: "Luckiest Guy",
         fontURL,
       };
-      if (this.mode === "color") {
-        return {
+      const modeOptions = {
+        color: {
           ...options,
-          background: "#132743",
-          text: "#d7385e",
-        };
-      } else if (this.mode === "pattern") {
-        return {
+          background: "#fcbc23",
+          text: "#532582",
+        },
+        pattern: {
           ...options,
           background: {
             backgroundColor: "white",
@@ -83,19 +125,25 @@ export default {
             patternColor: "currentColor",
             type: "line",
             rotation: -45,
+            width: 25,
+            height: 25,
           },
-        };
-      } else {
-        return {
+        },
+        image: {
           ...options,
           imageURL: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg",
           text: "#fff",
-        };
-      }
+        },
+      };
+      return modeOptions[this.mode];
     },
   },
 };
 </script>
 
 <style>
+.example {
+  position: absolute;
+  z-index: 10;
+}
 </style>

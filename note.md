@@ -569,3 +569,120 @@ function drawImage(context, image, width, height) {
 
 其实这个适配算法的形象理解为：我们脑中想象，让图片缩小至完全在canvas内部的中心位置（此时图片的两条对边紧贴canvas的两条边，具体是宽边紧贴还是高边紧贴那就和图片和canvas的宽高比有关了），我们想在canvas上呈现出来的图片的部分，就是：此时把图片等比例放大，直至另外两个在canvas内部的图片的对边紧贴canvas，此时canvas内部的图片部分，就是我们需要绘制的部分。
 
+# 15.删除Scale组件，Scale组件负责的缩放以及定位功能用Home组件的一个<div>实现；给Screen组件增加图片边框
+
+首先我们删除Scale组件，其缩放和定位由一个div完成的话，就把原来Scale组件中对于定位属性和大小属性的计算逻辑需要移动到Home组件中，所以Home组件中transform属性实际上就是Scale中的计算逻辑：
+
+~~~js
+transformed() {
+  const { from, to } = this.dimension;
+  const {
+    x: fromX,
+    y: fromY,
+    width: fromW,
+    height: fromH,
+    scale: fromS,
+  } = from;
+  const { x: toX, y: toY, width: toW, height: toH, scale: toS } = to;
+  return {
+    x: map(this.progress, 0, 1, fromX, toX),
+    y: map(this.progress, 0, 1, fromY, toY),
+    width: map(this.progress, 0, 1, fromW, toW),
+    height: map(this.progress, 0, 1, fromH, toH),
+    scale: map(this.progress, 0, 1, fromS, toS),
+  };
+},
+~~~
+
+在这个版本之前，from、to对象中to的width和height代表是滚轮滚动后Wallpaper最终的大小（`width: this.windowWidth*scale;height: this.windowWidth * scale`），但现在from还是代表全屏，to只是代表Wallpaper矩形比例的变化（`width: this.windowWidth;height: this.windowWidth * macAspect`，width和height并没有乘scale）,所以现在Home组件中`transform`属性实时计算的width和height只是一种Wallpaper比例的呈现（鼠标滚动之前宽高比就是浏览器宽高比，且宽就是浏览器宽；向下滚动至极限时，宽高比就是mac机的宽高比）。在Home组件中，我们把transform实时计算的宽高传递给Screen和Wallpaper作为宽高，然后Home组件中的div通过`transform: scale(${transformed.scale}, ${transformed.scale})`进行缩放。这里说这个form和to就是因为曾经在scale组件中current计算的width和height一直都是定值from.width和from.height，计算逻辑移动到Home组件里了，transform.width和transfrom.height却成了用map函数实时计算的了，可能有点懵：宽高都动态传递给screen和Wallpaper了，那为什么还要div中使用transform进行缩放，那岂不是重复缩放了，其实不然，因为我们修改了to对象，to只是代表一种宽高比例的变化，而不是具体大小的变化，宽一直都是全屏宽，所以传给screen和Wallpaper的大小仍然某种程度上还是和以前一样，是一个定值。
+
+Screen组件给Wallpaper添加图片边框
+
+Screen组件：
+
+~~~js
+borderWidth: `${border.top}px ${border.right}px ${border.bottom}px ${border.left}px`,
+borderStyle: 'solid',//默认值是none，需要设置为solid才有边框
+borderImage: `url(${src})`,
+borderImageSlice: `${meta.top} ${meta.right} ${meta.bottom} ${meta.left}`,
+~~~
+
+我们通过borderImage给wallpaper增加边框，borderImage和borderImageSlice属性配合使用，borderImageSlice是指把borderImage指定的图片按上、右、下、左的顺序画四条线，把图片分成9宫格，中间的一块默认丢弃，原图剩下四边四角，四角默认直接呈现应该是，四边默认会拉伸（这些都可以通过相关属性进行设置），也就是原图切出来的四边的图片拉伸后作为一个border边。光依靠上面这四个设置（边框不为none，有具体的边框宽度，用图片作为边框外观），其实我们就完成了边框的添加。
+
+目前的难点就是：
+
+我们的canvas大小是适配屏幕的，所谓屏幕适配就是浏览器展示多少，我们根据浏览器展示的大小获得一个大小，也就是说我们如果进行了页面缩放，我们浏览器中展示了很大的空间，其它的普通dom元素视觉上都变得很小（实际原因是浏览器展示范围变大），此时我们的canvas依然在我们眼中大小恒定，不会因为浏览器的大小缩放而在视觉上也随之缩小。我们希望我们给canvas添加的边框同样也适配屏幕，所以边框宽度就不能直接用borderImageSlice切图时用的meta（meta中切图时用的是边框的真实大小），图片Screen中border计算属性用来计算适配屏幕的边框宽度：
+
+~~~js
+border() {
+  /*
+  	containerWidth和containerHeight是Home组件中传过来的canvas的真实大小
+  */
+  const { width: containerWidth, height: containerHeight } = this;
+  /*
+  	meta中的大小数据都是指边框图片的真实大小，left、right、bottom和top指borderImageSlice切图时图片边缘距离对应切线的大小，我们可以用imageWidth - sliceLeft - sliceRight计算出边框图经过切图后中心部分留出了多少宽度用来呈现canvas
+  */
+  const {
+    width: imageWidth,
+    height: imageHeight,
+    left: sliceLeft,
+    right: sliceRight,
+    bottom: sliceBottom,
+    top: sliceTop,
+  } = this.meta;
+  const contentWidth = imageWidth - sliceLeft - sliceRight;
+  const contentHeight = imageHeight - sliceBottom - sliceTop;
+  /*
+  	因为canvas的大小是适配屏幕的，我们让边框适配屏幕只需要让边框的大小和canvas保持固定一个比例即可
+  	边框需要缩放的比例 = canvas真实大小 / 边框图片给canvas留的空间 = containerWidth / contentWidth
+  */
+  const ratioX = containerWidth / contentWidth;
+  const ratioY = containerHeight / contentHeight;
+  const left = Math.ceil(sliceLeft * ratioX);
+  const right = Math.ceil(sliceRight * ratioX);
+  const top = Math.ceil(sliceTop * ratioY);
+  const bottom = Math.ceil(sliceBottom * ratioY);
+  return {
+    left,
+    right,
+    top,
+    bottom,
+    width: containerWidth,
+    height: containerHeight,
+  };
+},
+~~~
+
+因为通过borderImage添加的边框一般都比较大，所以为了保证wallpaper的canvas仍然位于原先的位置：我们需要在Screen中用定位向上向左移动一下增加了边框的元素，最终Screen组件结构：
+
+~~~html
+<template>
+  <div
+    class="container"
+    :style="{
+      /*
+            消除边框较大带来的内容偏移
+      */
+      left: -border.left + 'px',
+      top: -border.top + 'px',
+      /*
+      		单纯大小的设置
+      */
+      width: border.width + 'px',
+      height: border.height + 'px',
+      /*
+      		添加图片边框      
+      */
+      borderWidth: `${border.top}px ${border.right}px ${border.bottom}px ${border.left}px`,
+      borderStyle: 'solid',
+      borderImage: `url(${src})`,
+      borderImageSlice: `${meta.top} ${meta.right} ${meta.bottom} ${meta.left}`,
+    }"
+  >
+    <slot></slot>
+  </div>
+</template>
+~~~
+
+
+

@@ -684,5 +684,6 @@ border() {
 </template>
 ~~~
 
+# 16.防止浏览器滚动条的出现
 
-
+默认body标签的`overflow`属性值为`auto`，也就是当body内的元素超出body时，自动添加滚动条，设置为`overflow: hidden;`即可。

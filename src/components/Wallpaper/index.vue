@@ -5,7 +5,11 @@
 </template>
 
 <script>
-import { drawColorWords, drawPatternWords, drawImageWords } from "@/utils/words";
+import {
+  drawColorWords,
+  drawPatternWords,
+  drawImageWords,
+} from "@/utils/words";
 
 export default {
   name: "Wallpaper",
@@ -13,7 +17,7 @@ export default {
     return {
       fontFace: undefined,
       image: undefined,
-    }
+    };
   },
   props: {
     options: {
@@ -22,7 +26,7 @@ export default {
       fontSize: Number,
       fontFamily: {
         type: String,
-        default: "Luckiest Guy"
+        default: "Luckiest Guy",
       },
       text: [String, Object],
       fontURL: String,
@@ -40,34 +44,60 @@ export default {
       await this.loadFont();
       switch (this.mode) {
         case "color":
-          drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+          drawColorWords(
+            this.$refs.canvas,
+            this.width,
+            this.height,
+            this.options
+          );
           break;
         case "pattern":
-          drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
+          drawPatternWords(
+            this.$refs.canvas,
+            this.width,
+            this.height,
+            this.options
+          );
           break;
         case "image":
           await this.loadImage();
-          drawImageWords(this.$refs.canvas, this.width, this.height, { ...this.options, image: this.image });
+          drawImageWords(this.$refs.canvas, this.width, this.height, {
+            ...this.options,
+            image: this.image,
+          });
           break;
       }
     },
     async loadFont() {
-      this.fontFace = await new FontFace(this.options.fontFamily, `url(${this.options.fontURL})`).load();
+      if (this.fontFace && this.fontFace.loaded) {
+        return;
+      } else {
+        this.fontFace = await new FontFace(
+          this.options.fontFamily,
+          `url(${this.options.fontURL})`
+        ).load();
+      }
     },
     async loadImage() {
-      this.image = await new Promise((resolve)=>{
-        const newImage = new Image();
-        newImage.src = this.options.imageURL;
-        newImage.onload = function() {
-          resolve(newImage);
-        }
-      })
-    }
+      if (this.image && this.image.complete) {
+        return;
+      } else {
+        this.image = await new Promise((resolve) => {
+          const newImage = new Image();
+          newImage.src = this.options.imageURL;
+          newImage.onload = function () {
+            resolve(newImage);
+          };
+        });
+      }
+    },
   },
   watch: {
     options: {
       deep: true,
-      handler() {
+      handler(oldData, newData) {
+        if (newData.fontURL !== oldData.fontURL) this.fontFace = undefined;
+        if (newData.imageURL !== newData.imageURL) this.image = undefined;
         this.render();
       },
     },

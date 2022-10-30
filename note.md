@@ -687,3 +687,96 @@ border() {
 # 16.防止浏览器滚动条的出现
 
 默认body标签的`overflow`属性值为`auto`，也就是当body内的元素超出body时，自动添加滚动条，设置为`overflow: hidden;`即可。
+
+# 17.bug修复
+
+## bug1:鼠标滚动缩放wallpaper时，canvas闪动（不能直接呈现出最终大小）
+
+bug具体描述：因为Scroll组件的存在，我们观察此bug还是很清晰，我们注释掉Scroll组件，会清晰的发现：当我们滚动鼠标滚轮缩小Wallpaper时，第一瞬间缩小后的Wallpaper和缩小前的Wallpaper宽高比例相同，然后突然发生变化至width和height指定的理论宽高比；鼠标滚轮滚动放大Wallpaper时，同理，第一瞬间和放大前的宽高比相同，然后突然变化至理论宽高比。
+
+原因：Home组件中`transform`计算属性根据滚动进度`progress`动态计算Wallpaper的宽高以及包裹Scroll组件的div的缩放比例scale。因为在鼠标滚动时`progress`值发生变化，导致`transform.scale`变化，会直接完成Wallpaper的缩放，但`progress`值发生变化同样导致了传递给Wallpaper的`height`值发生变化，Wallpaper中对width属性的监视，触发了`render`函数，导致Wallpaper重新渲染，高度再次变化，也就形成了我们看到的闪动bug。逻辑上其实这样写没问题，毕竟计算机高速计算，两者不应该这种顺序感这么强才对，应该就是一瞬间两者完成，不会闪动。究其原因是因为`render`函数耗时太大，准确来说是`render`函数加载字体耗时太大。不管每次渲染是否更换了新字体，我们都把字体重新加载一遍：
+
+~~~js
+async render() {
+  /*
+  	render函数体第一步：执行loadFont
+  */
+  await this.loadFont();
+  switch (this.mode) {
+    case "color":
+      drawColorWords(this.$refs.canvas, this.width, this.height, this.options);
+      break;
+    case "pattern":
+      drawPatternWords(this.$refs.canvas, this.width, this.height, this.options);
+      break;
+    case "image":
+      await this.loadImage();
+      drawImageWords(this.$refs.canvas, this.width, this.height, { ...this.options, image: this.image });
+      break;
+  }
+},
+~~~
+
+`loadFont:`
+
+~~~js
+async loadFont() {
+  /*
+  	耗时关键：等待新字体加载完毕（new FontFace().load()函数）
+  */
+  this.fontFace = await new FontFace(this.options.fontFamily, `url(${this.options.fontURL})`).load();
+},
+~~~
+
+所以我们要对字体加载进行优化：
+
+~~~js
+async loadFont() {
+  /*
+  	根据字体对象的loaded属性判断字体如果已经加载完毕就不再加载了
+  */
+  if(this.fontFace && this.fontFace.loaded) {
+    return;
+  }else {
+    this.fontFace = await new FontFace(this.options.fontFamily, `url(${this.options.fontURL})`).load();
+  }
+},
+~~~
+
+经过字体加载的优化，目前对于`"color"`和`"pattern"`绘制模式，都不会出现闪动bug了，但是对于`"image"`绘制模式，还是会出现闪动bug，肯定是因为`loadImage();`函数的调用消耗了大量时间。需要进行优化：
+
+~~~js
+async loadImage() {
+  /*
+  	根据图片对象的complete属性判断图片如果加载完毕就不再加载了
+  */
+  if (this.image && this.image.complete) {
+    return;
+  } else {
+    this.image = await new Promise((resolve) => {
+      const newImage = new Image();
+      newImage.src = this.options.imageURL;
+      newImage.onload = function () {
+        resolve(newImage);
+      };
+    });
+  }
+},
+~~~
+
+但是目前的优化逻辑，如果传入新的图片或者字体，也会判断为不再加载新的资源。所以还要修改一个逻辑，在检测到options发生变化时，让`this.image`和`this.fontFace`置为`undefined`，这样或许不是最有方案，但可以确保在新的图片或者字体传入时，我们会进行加载。
+
+~~~js
+options: {
+  deep: true,
+  handler(oldData, newData) {
+    if (newData.fontURL !== oldData.fontURL) this.fontFace = undefined;
+    if (newData.imageURL !== newData.imageURL) this.image = undefined;
+    this.render();
+  },
+},
+~~~
+
+## bug2:如果把Screen组件注释掉，手动拉伸浏览器致使Wallpaper大小于位置进行变化，会出现边框残影，我认为应该是浏览器渲染速度低导致的，应该不是我们的错
+
+创建canvas的上下文时不加边框即可。

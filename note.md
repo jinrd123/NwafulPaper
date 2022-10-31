@@ -780,3 +780,7 @@ options: {
 ## bug2:如果把Screen组件注释掉，手动拉伸浏览器致使Wallpaper大小于位置进行变化，会出现边框残影，我认为应该是浏览器渲染速度低导致的，应该不是我们的错
 
 创建canvas的上下文时不加边框即可。
+
+# 18.Screen组件内使用element-ui走马灯组件呈现Wallpaper
+
+其实简简单单用<el-carousel>和<el-carousel-item>去包裹<Wallpaper>即可，但是却一直出不来效果，经过排查发现因为Wallpaper组件中canvas标签用了一个div进行包裹，这个div使用了`flex`布局且`justify-content: center;`导致的。canvas外层的div结构已经删除。

@@ -3,10 +3,12 @@ import App from './App.vue'
 
 Vue.config.productionTip = false
 
-import { Menu, MenuItem } from "element-ui";
+import { Menu, MenuItem, Carousel, CarouselItem } from "element-ui";
 import 'element-ui/lib/theme-chalk/index.css';
 Vue.use(Menu);
 Vue.use(MenuItem);
+Vue.use(Carousel);
+Vue.use(CarouselItem);
 
 import router from "@/router";
 

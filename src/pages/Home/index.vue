@@ -16,12 +16,16 @@
         :width="transformed.width"
         :height="transformed.height"
       >
-        <wallpaper
-          :options="example"
-          :width="transformed.width"
-          :height="transformed.height"
-          :mode="mode"
-        />
+        <el-carousel :height="transformed.height + 'px'">
+          <el-carousel-item v-for="example in examples" :key="example.mode">
+            <wallpaper
+              :options="example"
+              :width="transformed.width"
+              :height="transformed.height"
+              :mode="example.mode"
+            />
+          </el-carousel-item>
+        </el-carousel>
       </screen>
     </div>
   </div>
@@ -51,6 +55,46 @@ export default {
         width: 1211,
         height: 707,
       },
+      examples: [
+        {
+          mode: "color",
+          title: "How are you?",
+          fontSize: 200,
+          fontFamily: "Luckiest Guy",
+          fontURL,
+          background: "#fcbc23",
+          text: "#532582",
+        },
+        {
+          mode: "pattern",
+          title: "How are you?",
+          fontSize: 200,
+          fontFamily: "Luckiest Guy",
+          fontURL,
+          background: {
+            backgroundColor: "white",
+            patternColor: "#ddd",
+            type: "line",
+          },
+          text: {
+            backgroundColor: "#89E089",
+            patternColor: "currentColor",
+            type: "line",
+            rotation: -45,
+            width: 25,
+            height: 25,
+          },
+        },
+        {
+          mode: "image",
+          title: "How are you?",
+          fontSize: 200,
+          fontFamily: "Luckiest Guy",
+          fontURL,
+          imageURL: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg",
+          text: "#fff",
+        },
+      ],
     };
   },
   components: {
@@ -99,43 +143,6 @@ export default {
         height: map(this.progress, 0, 1, fromH, toH),
         scale: map(this.progress, 0, 1, fromS, toS),
       };
-    },
-    example() {
-      const options = {
-        title: "How are you?",
-        fontSize: 200,
-        fontFamily: "Luckiest Guy",
-        fontURL,
-      };
-      const modeOptions = {
-        color: {
-          ...options,
-          background: "#fcbc23",
-          text: "#532582",
-        },
-        pattern: {
-          ...options,
-          background: {
-            backgroundColor: "white",
-            patternColor: "#ddd",
-            type: "line",
-          },
-          text: {
-            backgroundColor: "#89E089",
-            patternColor: "currentColor",
-            type: "line",
-            rotation: -45,
-            width: 25,
-            height: 25,
-          },
-        },
-        image: {
-          ...options,
-          imageURL: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg",
-          text: "#fff",
-        },
-      };
-      return modeOptions[this.mode];
     },
   },
 };

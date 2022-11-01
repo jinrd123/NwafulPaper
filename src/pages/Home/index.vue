@@ -1,33 +1,31 @@
 <template>
   <div>
     <h1>Home</h1>
-    <div
-      class="example"
-      :style="{
-        left: transformed.x + 'px',
-        top: transformed.y + 'px',
-        transform: `scale(${transformed.scale}, ${transformed.scale})`,
-        transformOrigin: 'left top',
-      }"
+    <scale
+      :from="dimension.from"
+      :to="dimension.to"
+      :fixed="true"
+      :progress="progress"
+      @onResize="handleResize"
     >
       <screen
         :src="screenURL"
         :meta="screenMeta"
-        :width="transformed.width"
-        :height="transformed.height"
+        :width="screenSize.width"
+        :height="screenSize.height"
       >
-        <el-carousel :height="transformed.height + 'px'">
+        <el-carousel :height="screenSize.height + 'px'">
           <el-carousel-item v-for="example in examples" :key="example.mode">
             <wallpaper
               :options="example"
-              :width="transformed.width"
-              :height="transformed.height"
+              :width="screenSize.width"
+              :height="screenSize.height"
               :mode="example.mode"
             />
           </el-carousel-item>
         </el-carousel>
       </screen>
-    </div>
+    </scale>
   </div>
 </template>
 
@@ -39,6 +37,7 @@ import { useWindowSize } from "@/mixins/useWindowSize";
 import { map } from "@/utils/math";
 import fontURL from "@/assets/font/LuckiestGuy.woff2";
 import screenURL from "@/assets/images/mac.png";
+import Scale from "@/components/Scale";
 const [MIN_Y, MAX_Y] = [0, 200];
 export default {
   name: "Home",
@@ -95,11 +94,16 @@ export default {
           text: "#fff",
         },
       ],
+      screenSize: {
+        width: 0,
+        height: 0,
+      },
     };
   },
   components: {
     Wallpaper,
     Screen,
+    Scale,
   },
   computed: {
     progress: function () {
@@ -145,6 +149,11 @@ export default {
       };
     },
   },
+  methods: {
+    handleResize({width, height}) {
+      this.screenSize = { width, height };
+    }
+  }
 };
 </script>
 

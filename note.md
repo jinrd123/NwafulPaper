@@ -784,3 +784,47 @@ options: {
 # 18.Screen组件内使用element-ui走马灯组件呈现Wallpaper
 
 其实简简单单用<el-carousel>和<el-carousel-item>去包裹<Wallpaper>即可，但是却一直出不来效果，经过排查发现因为Wallpaper组件中canvas标签用了一个div进行包裹，这个div使用了`flex`布局且`justify-content: center;`导致的。canvas外层的div结构已经删除。
+
+# 19.提取Scale组件，完成定位功能（fixed可选）和缩放功能
+
+Scale组件接收from和to两个状态对象和一个progress值，组件内部完成当前状态的计算。所以在把计算逻辑集成到Scale组件之后，Home组件需要得到当前的Scale的状态值（width和height）并传给Wallpaper和Screen（Home组件中维护data项screenSize对象）。所以使用全局事件总线给Home组件传值：**把`this.$emit`放在了transform计算属性里，经过测试，组件初始化时computed会执行一次，然后在每次transfrom变化时会再次执行，transform变化就代表Scale的当前状态值（width、height）发生改变，正好就传给父组件，比把$emit放在updated生命周期中要好（触发更加准确）。**
+
+还有一个知识点：因为Scale组件的定位功能我们希望通过一个布尔值fixed来选择性使用（如果fixed为false，我们就只根据from、to、progress来计算宽高的当前状态），所以我们可以使用`:style`的数组写法：
+
+~~~html
+<div
+:style="[
+    fixed && {
+    position: 'absolute',
+    left: transformed.x + 'px',
+    top: transformed.y + 'px',
+    zIndex,
+    },
+    {
+    transformOrigin: 'left top',
+    transform: `scale(${transformed.scale}, ${transformed.scale})`,
+    width: transformed.width + 'px',
+    height: transformed.height + 'px',
+    },
+    styles,
+]"
+>
+<slot />
+</div>
+~~~
+
+（**数组里可以包含若干个样式集合对象，而且样式对象的生效与否可以通过布尔值动态控制：`:style="[bool&&{}]"`**）而且在计算`transfrom`的返回值时，我们使用了相同的语法结构：
+
+~~~js
+const boundingBox = {
+    /*
+    	若fixed为false，就没有后面的对象，说白了 fixed&&{} 就等价于if(fixed)return {}
+    */
+    ...(fixed && { x: map(progress, 0, 1, fromX, toX) }),
+    ...(fixed && { y: map(progress, 0, 1, fromY, toY) }),
+    width: map(progress, 0, 1, fromW, toW),
+    height: map(progress, 0, 1, fromH, toH),
+    scale: map(progress, 0, 1, fromS, toS),
+};
+~~~
+

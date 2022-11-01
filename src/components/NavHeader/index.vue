@@ -21,4 +21,8 @@ export default {
 </script>
 
 <style>
+.el-menu {
+  display: flex;
+  justify-content: flex-end;
+}
 </style>

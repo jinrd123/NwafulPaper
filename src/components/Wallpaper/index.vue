@@ -40,7 +40,6 @@ export default {
   methods: {
     async render() {
       await this.loadFont();
-      console.log(this.fontFace);
       switch (this.mode) {
         case "color":
           drawColorWords(

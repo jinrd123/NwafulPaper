@@ -838,3 +838,16 @@ const boundingBox = {
 
 我们让canvas独立像素与css像素的比值等于` window.devicePixelRatio`。（一种选择而已，设备如果devicePixelRatio高，也就是物理像素多，那自然我们canvas独立像素密度扩展的也越大，越清晰）
 
+# 21.给element-ui组件修改样式
+
+实际上对于element-ui组件库里的组件，**组件名其实就是对应的这个组件的类名**，例如让导航组件<el-menu>里的<el-menu-item>靠右排列，那么直接在style里写：
+
+~~~css
+.el-menu {
+  display: flex;
+  justify-content: flex-end;
+}
+~~~
+
+
+

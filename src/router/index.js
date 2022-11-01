@@ -24,7 +24,8 @@ let router = new VueRouter({
             path: "/",
             redirect: "/editor"
         }
-    ]
+    ],
+    mode: "history"
 })
 
 export default router;

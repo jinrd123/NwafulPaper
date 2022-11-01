@@ -1,6 +1,16 @@
 <template>
   <div>
-    <h1>Home</h1>
+    <div class="top-container">
+      <div class="top">
+        <h1>Carpe Diem</h1>
+        <p>
+          Use words mixed with colors, patterns and images to communicate with
+          your wallpaper. 🍉
+        </p>
+        <el-button type="primary" @click="handleStarted">Get Started</el-button>
+        <el-button type="success" @click="handleExplore">Explore</el-button>
+      </div>
+    </div>
     <scale
       :from="dimension.from"
       :to="dimension.to"
@@ -110,9 +120,11 @@ export default {
       return map(this.scrollY, MIN_Y, MAX_Y, 0, 1);
     },
     dimension() {
-      const scale = 0.5;
-      const bottom = 150;
+      const bottom = 100;
       const macAspect = 0.625;
+      const toHeight =
+        ((this.windowHeight * 0.7 - 61) * (707 - 45 - 85)) / 707 - bottom / 2;
+      const scale = toHeight / (this.windowWidth * macAspect);
       return {
         from: {
           x: 0,
@@ -130,36 +142,37 @@ export default {
         },
       };
     },
-    transformed() {
-      const { from, to } = this.dimension;
-      const {
-        x: fromX,
-        y: fromY,
-        width: fromW,
-        height: fromH,
-        scale: fromS,
-      } = from;
-      const { x: toX, y: toY, width: toW, height: toH, scale: toS } = to;
-      return {
-        x: map(this.progress, 0, 1, fromX, toX),
-        y: map(this.progress, 0, 1, fromY, toY),
-        width: map(this.progress, 0, 1, fromW, toW),
-        height: map(this.progress, 0, 1, fromH, toH),
-        scale: map(this.progress, 0, 1, fromS, toS),
-      };
-    },
   },
   methods: {
     handleResize({width, height}) {
       this.screenSize = { width, height };
-    }
+    },
+    handleStarted() {
+      this.$router.push({ path: "editor" });
+    },
+    handleExplore() {
+      this.$router.push({ path: "background" });
+    },
   }
 };
 </script>
 
 <style>
-.example {
-  position: absolute;
-  z-index: 10;
+.top-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 33.3vh;
+}
+.top > h1 {
+  margin: 0.2em;
+  font-weight: bold;
+  font-size: 50px;
+}
+
+.top > p {
+  font-size: 20px;
+  margin-bottom: 1em;
 }
 </style>

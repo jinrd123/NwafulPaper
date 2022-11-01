@@ -828,3 +828,13 @@ const boundingBox = {
 };
 ~~~
 
+# 20.优化canvas清晰度
+
+我们增加canvas独立像素密度的时候，并不是增加的密度越大越好，如果太大，性能会降低很多，经过测试，确实是越大越清晰没毛病。
+
+但终归有一个比较合适的值，适配设备的物理像素，且性能较好。
+
+` window.devicePixelRatio`（pixel：[ˈpɪks(ə)l]像素）：设备中多少个物理像素来渲染一个css像素。
+
+我们让canvas独立像素与css像素的比值等于` window.devicePixelRatio`。（一种选择而已，设备如果devicePixelRatio高，也就是物理像素多，那自然我们canvas独立像素密度扩展的也越大，越清晰）
+

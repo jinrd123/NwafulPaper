@@ -3,6 +3,7 @@
     default-active="/home"
     mode="horizontal"
     :router="true"
+    :defaultActive="$route.path"
   >
     <el-menu-item index="/home">Home</el-menu-item>
     <el-menu-item index="/editor">Editor</el-menu-item>

@@ -22,7 +22,7 @@ let router = new VueRouter({
         },
         {
             path: "/",
-            redirect: "/home"
+            redirect: "/editor"
         }
     ]
 })

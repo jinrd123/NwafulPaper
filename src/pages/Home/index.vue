@@ -26,12 +26,19 @@
       >
         <el-carousel :height="screenSize.height + 'px'">
           <el-carousel-item v-for="example in examples" :key="example.mode">
-            <wallpaper
-              :options="example"
-              :width="screenSize.width"
-              :height="screenSize.height"
-              :mode="example.mode"
-            />
+            <div
+              @click="handleSelectExample(example)"
+              :style="{
+                cursor: progress >= 1 ? 'pointer' : 'default',
+              }"
+            >
+              <wallpaper
+                :options="example"
+                :width="screenSize.width"
+                :height="screenSize.height"
+                :mode="example.mode"
+              />
+            </div>
           </el-carousel-item>
         </el-carousel>
       </screen>
@@ -144,7 +151,7 @@ export default {
     },
   },
   methods: {
-    handleResize({width, height}) {
+    handleResize({ width, height }) {
       this.screenSize = { width, height };
     },
     handleStarted() {
@@ -153,7 +160,12 @@ export default {
     handleExplore() {
       this.$router.push({ path: "background" });
     },
-  }
+    handleSelectExample(example) {
+      if (this.progress < 1) return;
+      sessionStorage.setItem("wallpaperInfo", JSON.stringify(example));
+      this.$router.push({ path: "editor" });
+    },
+  },
 };
 </script>
 

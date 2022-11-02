@@ -18,6 +18,7 @@ let router = new VueRouter({
         },
         {
             path: "/editor",
+            name: "editor",
             component: Editor
         },
         {

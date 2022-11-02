@@ -849,5 +849,55 @@ const boundingBox = {
 }
 ~~~
 
+# 22.实现Editor页面的Wallpaper预览
 
+如果从Home页面点击Wallpaper，则进入Editor页面，并且呈现点击的Wallpaper，如果从导航栏进入Editor页面，则默认呈现一个Wallpaper即可。
+
+这里就涉及Home页面到Editor页面路由转跳时如何传递信息，考虑到Wallpaper的配置对象比较复杂，没有选择路由传参，我选择了浏览器会话存储结合路由组件`activated`和`deactivated`两个生命周期完成预期效果。
+
+我们在Home组件中如果点击了Wallpaper，那么在路由转跳之前进行会话存储`sessionStorage.setItem("wallpaperInfo", JSON.stringify(example));`，然后在进入Editior页面的时候读取这个对象传给Wallpaepr即可，但是不能在`mounted`生命周期中进行读取，因为Editor页面是被<keep-alive>缓存的路由组件（绘制进度需要保存），所以要在`activated`中进行读取（有则读，无则读取组件存储的Wallpaper信息），然后在`deactivated`路由组件失活时清除会话存储`sessionStorage.removeItem("wallpaperInfo")`清除状态以便下一次进入Editor时进行逻辑判断（会话存储有则读，无则读取组件存储的Wallpaper信息）。
+
+但是在Editor中Wallpaper组件的大小和定位是我们写死的。Wallpaper的大小我们设置了屏幕宽高。使用了一个div进行缩放，并把Wallpaper平移至<el-main>预览区域的中心。
+
+计算缩放比例以及平移距离：
+
+~~~js
+computed: {
+  transformed() {
+    const padding = 30;
+    /*
+    	mainHeight和mainWidth为预览区域的大小
+    */
+    const mainHeight = this.windowHeight - 61 - 200;
+    const mainWidth = this.windowWidth - 300;
+    /*
+    	预览区域给Wallpaper一些边距，减去padding即为呈现Wallpaper区域的大小
+    */
+    const width = mainWidth - padding * 2;
+    const height = mainHeight - padding * 2;
+    /*
+    	这里为缩放的核心逻辑：缩放后的Wallpaper需要能在Wallpaper区域（width，height）放的开
+    	所以我们选择sh,sw中较小的那一个（缩小的多）比例进行缩小
+    */
+    const sh = height / this.windowHeight;
+    const sw = width / this.windowWidth;
+    const scale = Math.min(sh, sw);
+    /*
+    	上面的scale保证了缩放后的Wallpaper小于width*height的空间，只需要Wallpaper居中即可
+    	this.windowWidth * scale即为缩放后Wallpaper的视觉宽度
+    	this.windowHeight * scale即为缩放后Wallpaper的视觉高度
+    	利用translate让元素居中的简单计算：
+    	translateX = ( 容器宽度 - 元素宽度 ) / 2
+    	translateY = ( 容器高度 - 元素高度 ) / 2
+    */
+    const translateX = (mainWidth - this.windowWidth * scale) / 2;
+    const translateY = (mainHeight - this.windowHeight * scale) / 2;
+    return {
+      scale,
+      translateX,
+      translateY,
+    };
+  },
+},
+~~~
 

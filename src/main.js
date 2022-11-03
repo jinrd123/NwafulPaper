@@ -3,7 +3,9 @@ import App from './App.vue'
 
 Vue.config.productionTip = false
 
-import { Menu, MenuItem, Carousel, CarouselItem, Container, Aside, Main, Footer, Button } from "element-ui";
+import {
+  Menu, MenuItem, Carousel, CarouselItem, Container, Aside, Main, Footer, Button, Input, ColorPicker, Slider
+} from "element-ui";
 import 'element-ui/lib/theme-chalk/index.css';
 Vue.use(Menu);
 Vue.use(MenuItem);
@@ -14,6 +16,9 @@ Vue.use(Aside);
 Vue.use(Main);
 Vue.use(Footer);
 Vue.use(Button);
+Vue.use(Input);
+Vue.use(ColorPicker);
+Vue.use(Slider);
 
 import router from "@/router";
 

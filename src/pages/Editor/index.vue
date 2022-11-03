@@ -1,6 +1,8 @@
 <template>
   <el-container class="container">
-    <el-aside width="300px">Aside</el-aside>
+    <el-aside width="300px"
+      ><attribute-tree :options="attribute" :values="example"
+    /></el-aside>
     <el-container>
       <el-main
         ><div
@@ -23,9 +25,12 @@
 
 <script>
 import Wallpaper from "@/components/Wallpaper";
+import AttributeTree from "@/components/AttributeTree/index.vue";
 import { useWindowSize } from "@/mixins/useWindowSize";
 import fontURL from "@/assets/font/LuckiestGuy.woff2";
+import { getAttributeOptions } from "@/utils/attribute";
 export default {
+  name: "Editor",
   data() {
     return {
       example: {
@@ -42,6 +47,7 @@ export default {
   mixins: [useWindowSize()],
   components: {
     Wallpaper,
+    AttributeTree,
   },
   activated() {
     this.example = sessionStorage.getItem("wallpaperInfo")
@@ -68,6 +74,9 @@ export default {
         translateX,
         translateY,
       };
+    },
+    attribute() {
+      return getAttributeOptions(this.example.mode);
     },
   },
 };

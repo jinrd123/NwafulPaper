@@ -901,3 +901,114 @@ computed: {
 },
 ~~~
 
+# 23.AttributeTree组件的实现（Editor页面完成对Wallpaper配置属性的修改）&&实现color模式的修改树数据结构
+
+这是一个基于（结合）数据结构创作的组件，也就是说**根据不同的数据结构我们可以获得组件不同的表现（结构、功能）**。
+
+数据结构：
+
+~~~js
+export const color = {
+  type: "container",
+  children: [
+    {
+      type: "text",
+      key: "title",
+      name: "Title",
+      placeholder: "Please input title",
+    },
+    {
+      type: "color",
+      key: "text",
+      name: "Title Color",
+    },
+    {
+      type: "color",
+      key: "background",
+      name: "Background Color",
+    },
+    {
+      type: "number",
+      key: "fontSize",
+      name: "Font Size",
+    },
+  ],
+};
+~~~
+
+`color.children`是我们想要遍历生成组件的真实数据部分，我们的总体思路是`AttributeTree`组件的基本结构是遍历数据结构生成自身，就像递归一样，一个children项我们希望生成一个`AttributeTree`组件，所以我们构造color对象时，就不可能让`children`里的子项成为`color`的最上层项，这样就会造成`AttributeTree`无脑遍历生成`AttributeTree`无限嵌套，这里的逻辑总结比较抽象，至于数据结构为什么要上面那样设计，直接看`AttributeTree`组件的结构：
+
+~~~js
+<template>
+  <div v-if="options.type === 'container'">
+    <attribute-tree
+      v-for="child in options.children"
+      :options="child"
+      :key="child.key"
+      :values="values"
+    />
+  </div>
+  /*
+  	field组件就是一个壳子，里面一个span，一个slot，flex布局justify-content: space-between，说白了就是给slot按钮加一个name，并且name和按钮在一行的两端，比较美观
+  */
+  <feild v-else :name="options.name">
+    /*
+    	真实数据对象（children的子对象）的type属性值控制生成按钮的种类
+    	key属性值用来绑定values对象的对应属性，也就是这个按钮用来对values对象的这个属性进行修改
+    */
+    <el-input
+      v-if="options.type === 'text'"
+      :placeholder="options.placeholder"
+      v-model="values[options.key]"
+    />
+    <el-color-picker
+      v-if="options.type === 'color'"
+      v-model="values[options.key]"
+    />
+    <el-slider
+      v-if="options.type === 'number'"
+      v-model="values[options.key]"
+      :min="10"
+      :max="300"
+      :style="{ width: 200 + 'px' }"
+    >
+    </el-slider>
+  </feild>
+</template>
+~~~
+
+结构分析：顶层结构是由`v-if`和`v-else`控制的同级的互斥的<div v-if="options.type === 'container'">和<feild v-else :name="options.name">，也就是说如果传给`AttributeTree`组件的`options`对象的`type`属性值为`container`，那么就遍历`options.children`生成当前`AttributeTree`的子`AttributeTree`，直到传给`AttributeTree`的`options`对象的`type`属性值不为`container`（也就是把children里的真实数据对象传给`AttributeTree`了），就说明当前的这个`AttributeTree`组件的内容就不是`AttributeTree`了，而是生成一些功能性的东西（渲染<feild v-else :name="options.name">那部分），也就意味着`AttributeTree`组件递归生成`AttributeTree`的结束。
+
+所以说我们写一个顶级的`AttributeTree`组件，只要传给他设计好的`options`对象，就能生成与`options`对象相匹配的按钮结构树。
+
+（`AttributeTree`除了接收`options`对象之外，还接收一个`values`对象，并且在生成壳子`AttributeTree`（v-if="options.type === 'container'"）时会原封不动的把`values`传递下去，直到生成的功能按钮绑定了`values`的某个属性，这个`values`对象就是我们顶级`AttributeTree`的父组件想利用`AttributeTree`去维护的数据对象：**Editor页面维护的example对象，也就是Wallpaper的配置对象，我们通过props传给`AttributeTree`，单向数据流props如果传递的是对象的话，子组件对props属性的修改会影响到父组件中原对象的值，虽然不提倡，但是可以，我们这里也采用的这种方式实现子组件（`AttributeTree`）传值给父组件（`Editor`），然后example属性值变了，自然起到了修改Wallpaper渲染配置的效果**）
+
+我们在Editor页面根据`this.mode`获取对应的数据结构作为`AttributeTree`的`options`（`options`决定生成的`AttributeTree`的结构），本次只更新了`this.mode == "color"`时的数据结构，image和pattern模式的对应结构还未开发。
+
+`Editor-computed-getAttributeOptions`：
+
+~~~js
+attribute() {
+  /*
+  	当前版本因为this.example.mode == "image" / "pattern" 时计算属性attribute获取不到值，所以Home页面点击color模式外的另外两个Wallpaper会报错
+  */
+  return getAttributeOptions(this.example.mode);
+},
+~~~
+
+`utils/attribute/index.js - getAttributeOptions`：
+
+~~~js
+import { color } from "./color";
+/*
+	color即为最上面呈现的数据结构
+*/
+export function getAttributeOptions(type) {
+  if (type === "color") {
+    return color;
+  }
+  /*
+  	image和pattern模式待开发
+  */
+}
+~~~

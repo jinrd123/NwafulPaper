@@ -4,8 +4,7 @@
       ><attribute-tree :options="attribute" :values="example"
     /></el-aside>
     <el-container>
-      <el-main
-        ><div
+<div
           :style="{
             transform: `translate(${transformed.translateX}px, ${transformed.translateY}px) scale(${transformed.scale}, ${transformed.scale})`,
             transformOrigin: 'left top',
@@ -17,8 +16,7 @@
             :width="windowWidth"
             :height="windowHeight"
           /></div
-      ></el-main>
-      <el-footer height="200px">Footer</el-footer>
+      >
     </el-container>
   </el-container>
 </template>
@@ -59,8 +57,8 @@ export default {
   },
   computed: {
     transformed() {
-      const padding = 30;
-      const mainHeight = this.windowHeight - 61 - 200;
+      const padding = 50;
+      const mainHeight = this.windowHeight - 61;
       const mainWidth = this.windowWidth - 300;
       const width = mainWidth - padding * 2;
       const height = mainHeight - padding * 2;

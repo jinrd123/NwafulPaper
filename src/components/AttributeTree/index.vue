@@ -59,7 +59,6 @@ export default {
       const reader = new FileReader();
       reader.readAsDataURL(file.raw);
       reader.onload = (event) => {
-        console.log(event);
         const imageURL = event.target.result;
         this.values.imageURL = imageURL;
       };

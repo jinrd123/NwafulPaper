@@ -7,7 +7,11 @@
       :values="values"
     />
   </div>
-  <feild v-else :name="options.name">
+  <feild
+    v-else
+    :name="options.name"
+    :flex="options.type === 'image' ? 'col' : 'row'"
+  >
     <el-input
       v-if="options.type === 'text'"
       :placeholder="options.placeholder"
@@ -27,30 +31,21 @@
     </el-slider>
     <el-upload
       v-if="options.type === 'image'"
-      class="upload-demo"
-      ref="upload"
-      action="https://jsonplaceholder.typicode.com/posts/"
+      class="upload"
+      action=""
       :auto-upload="false"
+      :on-change="handleChange"
+      :on-exceed="handleExceed"
+      :limit="1"
     >
-      <el-button slot="trigger" size="small" type="primary"
-        >select file</el-button
-      >
-      <el-button
-        style="margin-left: 10px"
-        size="small"
-        type="success"
-        @click="submitUpload"
-        >upload to server</el-button
-      >
-      <div class="el-upload__tip" slot="tip">
-        jpg/png files with a size less than 500kb
-      </div>
+      <el-button size="small" type="primary"> select image </el-button>
     </el-upload>
   </feild>
 </template>
 
 <script>
 import Feild from "./Field.vue";
+import { Message } from "element-ui";
 
 export default {
   name: "attribute-tree",
@@ -60,9 +55,25 @@ export default {
     values: Object,
   },
   methods: {
-    submitUpload() {
-      console.log("@@");
+    handleChange(file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file.raw);
+      reader.onload = (event) => {
+        console.log(event);
+        const imageURL = event.target.result;
+        this.values.imageURL = imageURL;
+      };
+    },
+    handleExceed() {
+      Message.error("请先删除已上传图片～");
     },
   },
 };
 </script>
+<style scoped>
+.upload {
+  width: 100%;
+  text-align: left;
+}
+</style>
+

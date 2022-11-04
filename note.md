@@ -1012,3 +1012,177 @@ export function getAttributeOptions(type) {
   */
 }
 ~~~
+
+# 24.实现image上传功能
+
+## 前置知识：
+
+### H5 FileReader对象进行文件操作
+
+FileReader对象用于操作File对象或者Blob对象。
+
+#### File对象的来源：
+
+~~~html
+/*
+	file类型的input的文件上传后触发的onchange事件接收参数node，即为这个input结点
+	input结点的files数组里面存放的就是上传的文件对应的File对象
+*/
+<input type="file" onchange="getInfo(node)">
+<script>
+	function getInfo(node) {
+        console.log(node.files)
+    } 
+</script>
+~~~
+
+#### FileReader对象的相关API：
+
+* `readAsDataURL(FileObj)`：将文件处理成URL格式的Base64字符串（**说白了就是一个字符串，这个字符串可以代替某些标签的url属性，虽然不是url，但起到同样的效果**，例如这个字符串给image标签的src属性），一般FileReader对象处理图片类型的File对象时选择。
+* `readAsText(FileObj)`：将文件按照文本文件进行处理（以获取文本内容），一般FileReader对象处理文本类型的File对象时选择。
+
+* `...`：还有其它API对应处理不同的File对象，用到再说。
+
+#### FileReader对象的相关属性（指定生命周期的对应回调）：
+
+* `FileReader.onload`：指定读取文件成功后执行的回调
+* `...`：其他生命周期属性，用到再说。
+
+#### **API与生命周期属性的关系**
+
+*两者是相互对应，密不可分的，因为我们的FileReader对象使用了某个API操作了某个文件之后，对应不同的API此时FileReader对象有不同的表现，那这个表现具体在哪里呈现就需要结合生命周期函数。举例来说：`ImgFile`是一个图片类型的文件对象，`fr`是一个`FileReader`实例，先执行`fr.readAsDataURL(ImgFile)`，执行之后，我们可以在`onload`指明的回调函数中接收到一个事件对象`e`，`e.target.result`就是base64格式的字符串。如果是`readAsText`处理的文本文件，`e.target.result`就是对应的文本内容。*
+
+**总而言之就是不同的API处理文件之后，对应生命周期回调中`e.target.result`（处理结果）不同**
+
+拓展（另一个获取文件url的方法）：`window.URL.createObjectURL(FileObj)`方法可以返回一个文件对象的url。
+
+## 具体实现：
+
+`AttributeTree`组件中增加渲染结构的种类，处理图片的上传：
+
+~~~js
+<el-upload
+      v-if="options.type === 'image'"
+      class="upload"
+      action=""
+      :auto-upload="false"
+      :on-change="handleChange"
+      :on-exceed="handleExceed"
+      :limit="1"
+    >
+      <el-button size="small" type="primary"> select image </el-button>
+    </el-upload>
+~~~
+
+<el-upload>原本是用来上传文件的组件，但是我们暂时用不到上传功能，所以`action`属性也设置了空，说白了如果不指定`action`，也就是不使用上传功能的话，<el-upload>只是单纯对`file`类型的<input>的简单封装，说白了就是我们可以通过<el-upload>的一些事件回调获取到文件对象（说白了就是<input type="file">借用了一下样式以及事件封装而已）：
+
+~~~js
+/*
+	on-change事件的回调函数（参数详情去element-ui官方文档查询即可）
+*/
+handleChange(file) {
+  /*
+  	回调的核心逻辑就是对图片类型的文件对象的处理：使用FileReader对象
+  	并且完成对values（wallpaper配置对象）的修改
+  */
+  const reader = new FileReader();
+  reader.readAsDataURL(file.raw);
+  reader.onload = (event) => {
+    console.log(event);
+    const imageURL = event.target.result;
+    this.values.imageURL = imageURL;
+  };
+},
+~~~
+
+## bug避雷
+
+按理论上来讲上面的逻辑已经完成了图片上传之后对Wallpaper的属性修改，自然进行新的渲染，但是意外的是，Wallpaper组件并没有渲染新的图片，经过排查，问题代码：
+
+~~~js
+watch: {
+  options: {
+    deep: true,
+    handler(oldData, newData) {
+      if (newData.fontURL !== oldData.fontURL) this.fontFace = undefined;
+      /*
+      	这里并没有执行this.image = undefined，从而进行新的渲染时，没有加载新的图片
+      */
+      if (newData.imageURL !== newData.imageURL) this.image = undefined;
+      this.render();
+    },
+  },
+      
+  ...
+  
+}
+~~~
+
+**vue的watch，如果深度监视一个对象，这个对象的属性值发生变化会被监听到，但是`handler`函数的`oldData`和`newData`，官方自然有对其合理性的解释....但对程序员来说这就是简简单单的vue漏洞！**
+
+所以上面错误代码把`if`判断删除即可正常执行上传图片的渲染，但这里肯定也消耗了一定效率。
+
+# plus：渲染image上传按钮时field组件设置单独的样式
+
+情景：此前我们field组件的布局样式是写死的：flex布局，两头左边标题，右边按钮，对于前面的颜色选择器，以及input等都适用，但是现在对于文件上传，上传文件之后文件名列在按钮之下，如果还是以前的布局就非常不美观。所以需求：**让field组件针对一些渲染情况有不同的样式表现**：
+
+使用`:class`的数组形式：`:class="[]"`**数组里面存放若干个变量，变量的值为字符串类型的类名（不能直接写字符串类名，所以要用data维护几个变量，其值对应一些类名）**。
+
+`field.vue`：
+
+~~~vue
+<template>
+  /*
+		通过props接收的flex变量的值决定使用哪个class样式
+		生成image上传相关的按钮时控制flex值即可
+			<feild :flex="options.type === 'image' ? 'col' : 'row'">
+		类名需要用data中的一个变量去存放
+  */
+  <div :class="[containerClass, flex === 'row' ? rowClass : colClass]">
+    <span class="input-label">{{ name }}</span>
+    <slot />
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    name: String,
+    flex: {
+      default: "row",
+      type: String,
+    },
+  },
+  data() {
+    return { containerClass: "container", rowClass: "row", colClass: "col" };
+  },
+};
+</script>
+
+<style scoped>
+.input-label {
+  display: inline-block;
+  padding-right: 0.5em;
+}
+
+.container {
+  padding: 0.25em 0.5em;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.col > span {
+  margin-bottom: 0.5em;
+}
+</style>
+~~~

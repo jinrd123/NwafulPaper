@@ -1186,3 +1186,96 @@ export default {
 }
 </style>
 ~~~
+
+# 25.代码重构
+
+## 核心
+
+此前Wallpaper的绘制模式为`color`、`pattern`、`image`，背景与文字的模式是统一的，绘制无法分离。
+
+需求：重构Wallpaper的`options`配置对象的结构与`render`方法，实现背景与文字的绘制模式分离。
+
+`Wallpaper-props-options`（Wallpaper配置对象新结构示例）：
+
+~~~js
+examples: [
+  /*
+  		每个配置对象包含text、background两个字对象，绘制模式的区别在于子对象的type属性：
+  			type:"none":原color绘制模式，简单的颜色填充
+  			type:"line":原pattern绘制模式，颜色填充之后用线条进行装饰
+  			type:"image":原image绘制模式，用图片进行填充
+  */
+  {
+    text: {
+      content: "How are you?",
+      fontSize: 200,
+      fontFamily: "Luckiest Guy",
+      fontURL,
+      type: "none",
+      color: "#532582",
+    },
+    background: {
+      type: "none",
+      color: "#fcbc23",
+    },
+  },
+  {
+    text: {
+      content: "How are you?",
+      fontSize: 200,
+      fontFamily: "Luckiest Guy",
+      fontURL,
+      type: "line",
+      rotation: -45,
+      width: 25,
+      height: 25,
+      foregroundColor: "currentColor",
+      color: "#89E089",
+    },
+    background: {
+      color: "white",
+      foregroundColor: "#ddd",
+      type: "line",
+    },
+  },
+  {
+    text: {
+      content: "How are you?",
+      fontSize: 200,
+      fontFamily: "Luckiest Guy",
+      fontURL,
+      type: "none",
+      color: "#fff",
+    },
+    background: {
+      type: "image",
+      imageURL: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg",
+    },
+  },
+],
+~~~
+
+Wallpaper组件内方法变化：
+
+`render`函数的逻辑就是调用`drawWallpaper`方法，`drawWallpaper`方法根据Wallpaper的配置对象自动选择背景与文字的绘制模式。
+
+`drawWallpaper`：
+
+~~~js
+export function drawWallpaper(canvas, width, height, options) {
+  const context = createContext(canvas, width, height);
+  const { text: textOptions, background: backgroundOptions } = options;
+  /*
+  		drawWallpaper的核心逻辑就是对drawBackground、drawText方法的调用。
+  		drawBackground和drawText就是对背景与文字进行绘制，只是在具体绘制之前根据backgroundOptions、textOptions的"type"属性判断如何进行绘制即可
+  */
+  drawBackground(context, width, height, backgroundOptions);
+  drawText(context, width, height, textOptions);
+}
+~~~
+
+## plus
+
+对于资源的加载等一些方法也进行了重写，没有什么逻辑变化。
+
+当前没有对AttributeTree组件的结构配置对象进行修改，而且AttributeTree组件内部绑定的值也需要修改，所以Editor页面会报错。Wallpaper的重构已经完成，没有问题。

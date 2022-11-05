@@ -3,11 +3,9 @@
 </template>
 
 <script>
-import {
-  drawColorWords,
-  drawPatternWords,
-  drawImageWords,
-} from "@/utils/words";
+import { drawWallpaper } from "@/utils/wallpaper";
+import { loadImage, loadFont } from "@/utils/load";
+import { Message } from "element-ui";
 
 export default {
   name: "Wallpaper",
@@ -18,75 +16,30 @@ export default {
     };
   },
   props: {
-    options: {
-      title: String,
-      background: [String, Object],
-      fontSize: Number,
-      fontFamily: {
-        type: String,
-        default: "Luckiest Guy",
-      },
-      text: [String, Object],
-      fontURL: String,
-      imageURL: String,
-    },
+    options: Object,
     width: Number,
     height: Number,
-    mode: String,
   },
   mounted() {
     this.render();
   },
   methods: {
     async render() {
-      await this.loadFont();
-      switch (this.mode) {
-        case "color":
-          drawColorWords(
-            this.$refs.canvas,
-            this.width,
-            this.height,
-            this.options
-          );
-          break;
-        case "pattern":
-          drawPatternWords(
-            this.$refs.canvas,
-            this.width,
-            this.height,
-            this.options
-          );
-          break;
-        case "image":
-          await this.loadImage();
-          drawImageWords(this.$refs.canvas, this.width, this.height, {
-            ...this.options,
-            image: this.image,
-          });
-          break;
-      }
+      await this.loadAssets();
+      if (this.image) this.options.background.image = this.image;
+      drawWallpaper(this.$refs.canvas, this.width, this.height, this.options);
     },
-    async loadFont() {
-      if (this.fontFace && this.fontFace.loaded) {
-        return;
-      } else {
-        this.fontFace = await new FontFace(
-          this.options.fontFamily,
-          `url(${this.options.fontURL})`
-        ).load();
-      }
-    },
-    async loadImage() {
-      if (this.image && this.image.complete) {
-        return;
-      } else {
-        this.image = await new Promise((resolve) => {
-          const newImage = new Image();
-          newImage.src = this.options.imageURL;
-          newImage.onload = function () {
-            resolve(newImage);
-          };
-        });
+    async loadAssets() {
+      try {
+        const { fontURL, fontFamily } = this.options.text;
+        const { imageURL } = this.options.background;
+        const shouldLoadFont = fontURL && (!this.fontFace || !this.fontFace.loaded);
+        const shouldLoadImage = imageURL && !this.image;
+        if (!shouldLoadFont && !shouldLoadImage) return;
+        this.fontFace = shouldLoadFont ? await loadFont(fontURL, fontFamily) : this.fontFace;
+        this.image = shouldLoadImage ? await loadImage(imageURL) : this.image;
+      } catch (e) {
+        Message.error("Failed to load assets!");
       }
     },
   },
@@ -94,7 +47,7 @@ export default {
     options: {
       deep: true,
       handler(oldData, newData) {
-        if (newData.fontURL !== oldData.fontURL) this.fontFace = undefined;
+        if (newData.text.fontURL !== oldData.text.fontURL) this.fontFace = undefined;
         this.image = undefined;
         this.render();
       },

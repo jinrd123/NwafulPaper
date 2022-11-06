@@ -1279,3 +1279,265 @@ export function drawWallpaper(canvas, width, height, options) {
 对于资源的加载等一些方法也进行了重写，没有什么逻辑变化。
 
 当前没有对AttributeTree组件的结构配置对象进行修改，而且AttributeTree组件内部绑定的值也需要修改，所以Editor页面会报错。Wallpaper的重构已经完成，没有问题。
+
+# 25.AttributeTree组件结构以及相关数据结构重构
+
+## 相关数据结构（数据结构肯定要结合AttributeTree组件的相关结构逻辑，但我们先单独分析数据结构）：
+
+在顶层对象（`type:"container"`）与真实的结构对象之间再加一层中间对象（`type:"section"`），这一层的功能在于区分真实的结构对象是文本相关的配置还是背景相关的配置。
+
+最重要的当然还是真实的功能按钮对应的结构对象，也就是`section`对象的`children`组数属性的数组项（最底层对象）。
+
+~~~js
+export function getAttributeOptions(textType, backgroundType) {
+  return {
+    type: "container",
+    children: [
+      {
+        type: "section",
+        name: "Text",
+        /*
+        	children数组的每一项都对应生成一个功能按钮（绑定wallpaper的一个配置属性值）
+        	追踪到getTextOptions( "none" / "line" ) （ getBackgroundOptions(backgroundType)逻辑结构完全类似 ）
+        */
+        children: getTextOptions(textType)
+      },
+      {
+        type: "section",
+        name: "Background",
+        children: getBackgroundOptions(backgroundType)
+      }
+    ]
+  };
+}
+
+export function getTextOptions(type) {
+  return [
+    /*
+    	下面这两个对象分别对应Wallpaper的 文本内容 和 文本字体大小
+        与 "type" 无关，是必须属性
+    */
+    {
+      type: "text",
+      key: "text.content",
+      name: "Content",
+      placeholder: "Please input title"
+    },
+    {
+      type: "number",
+      key: "text.fontSize",
+      name: "Font Size",
+      min: 10,
+      max: 300
+    },
+    /*
+    	根据 "type" 值的不同获取不同的属性对象
+    	追踪到getTextStyleOptions方法（返回包含多个配置对象的数组，这里使用...进行数组解构获取配置对象）
+    */
+    ...getTextStyleOptions(type)
+  ];
+}
+
+export function getTextStyleOptions(type) {
+  /*
+  		type值的分支：
+  			"none" / undefined : 简单返回一个背景颜色的配置对象
+  			other : 返回 getPatternOptions(type, "text"),为了代码复用，封装了getPatternOptions方法，getPatternOptions方法也可以生成背景相关的配置对象，所以第二个参数需要指定"text"
+  */
+  if (!type || type === "none") {
+    return [
+      {
+        type: "color",
+        key: "text.color",
+        name: "Color"
+      }
+    ];
+  } else {
+    return getPatternOptions(type, "text");
+    /*
+    	追踪到getPatternOptions(type, "text")
+    */
+  }
+}
+
+export function getBackgroundOptions(type) {
+  if (!type || type === "none") {
+    return [
+      {
+        type: "color",
+        key: "background.color",
+        name: "Color"
+      }
+    ];
+  } else if (type === "image") {
+    return [
+      {
+        type: "image",
+        key: "background.imageURL",
+        name: "Image"
+      }
+    ];
+  } else {
+    return getPatternOptions(type, "background");
+  }
+}
+
+export function getPatternOptions(type, prefix) {
+  /*
+  		目前只设计了type值为"line"的情况，返回四个配置对象
+  			first:背景颜色
+  			second:线条颜色
+  			third:线条间距
+  			fourth:线条倾斜弧度
+  */
+  if (type === "line") {
+    return [
+      {
+        type: "color",
+        key: `${prefix}.color`,
+        name: "Background Color"
+      },
+      {
+        type: "color",
+        key: `${prefix}.foregroundColor`,
+        name: "Foreground Color"
+      },
+      {
+        type: "number",
+        key: `${prefix}.width`,
+        name: "Width",
+        min: 10,
+        max: 100
+      },
+      {
+        type: "number",
+        key: `${prefix}.rotation`,
+        name: "Rotation",
+        min: 0,
+        max: Math.PI
+      }
+    ];
+  }
+}
+~~~
+
+## AttributeTree组件结构：
+
+~~~html
+<template>
+  /*
+  		顶层为if - else if - else 的三层并列结构，分别对应数据结构中的"container"、"section和真实数据对象  
+    	对于"container"和"section"都递归引用AttributeTree组件，遍历其children数组
+  */
+  <div v-if="options.type === 'container'">
+    <attribute-tree
+      v-for="child in options.children"
+      :options="child"
+      :key="child.key"
+      :values="values"
+    />
+  </div>
+  <div v-else-if="options.type === 'section'">
+    <span>{{ options.name }}</span>
+    <attribute-tree
+      v-for="child in options.children"
+      :options="child"
+      :key="child.key"
+      :values="values"
+    />
+  </div>
+  /*
+  		对于生成真实功能按钮的feild部分，逻辑基本没变，还是通过options的属性进行生成
+    	核心难点就在于对于文本、数值滑块、颜色选择器按钮，v-model如何绑定？
+    	因为当前的Walpaper的配置对象分成了text和background两个部分，两个子对象，究竟要绑定哪个子对象的属性？
+    	跳转到下面计算属性value
+  */
+  <feild v-else :name="options.name" :flex="options.type === 'image' ? 'col' : 'row'">
+    <el-input
+      v-if="options.type === 'text'"
+      :placeholder="options.placeholder"
+      v-model="value"
+    />
+    <el-color-picker v-if="options.type === 'color'" v-model="value" />
+    <el-slider
+      v-if="options.type === 'number'"
+      v-model="value"
+      :min="options.min"
+      :max="options.max"
+      :style="{ width: 200 + 'px' }"
+    >
+    </el-slider>
+    <el-upload
+      v-if="options.type === 'image'"
+      class="upload"
+      action=""
+      :auto-upload="false"
+      :on-change="handleChange"
+      :on-exceed="handleExceed"
+      :limit="1"
+    >
+      <el-button size="small" type="primary"> select image </el-button>
+    </el-upload>
+  </feild>
+</template>
+~~~
+
+AttributeTree组件—`computed-value`：
+
+首先对于value这个计算属性，不同于以往经常使用的计算属性，默认只设置了get方法，我们也需要给value设置set方法，用于`v-model`对其进行修改。
+
+这里为了能区分绑定的是text对象的属性还是background对象的属性，我们设计的数据结构的每一个生成功能按钮的配置对象的`key`值，都采用了`text.KEY`或者`background.KEY`的格式，我们只要根据`key`字符串`.`之前的字段就可以区分绑定的属性属于哪个对象。我们定义了`get`和`set`方法，使用`reduce`方法对wallpaper配置对象进行“扒皮”，锁定对应属性之后进行读写操作。
+
+~~~js
+value: {
+  get() {
+    const { key } = this.options;
+    if (!key) return;
+    return get(this.values, key);
+  },
+  set(newValue) {
+    const { key } = this.options;
+    if (!key) return;
+    set(this.values, key, newValue);
+  },
+},
+~~~
+
+~~~js
+/*
+	set && get
+*/
+export function set(obj, key, value) {
+  const keys = key.split(".");
+  const lastKey = keys.pop();
+  /*
+  		说白了key值类似于一个路径的记录，例如text.context,就是说wallpaper的顶级配置对象先取text子对象，再访问text子对象的context属性，这也是一种技巧
+  		先把key值用split(".")分成数组之后，reduce回调的每一次执行都类似于对顶层对象的"扒皮"，最终锁定到我们要的那个属性（当然set和get的具体实现不同，原理都是这样）
+  */
+  const o = keys.reduce((o, key) => o[key], obj);
+  o[lastKey] = value;
+}
+
+export function get(obj, key) {
+  const keys = key.split(".");
+  return keys.reduce((obj, key) => obj[key], obj);
+}
+~~~
+
+上面所有的逻辑就是对AttributeTree的重构，我们只要在Editor页面调用`getAttributeOptions`方法获取AttributeTree的配置对象即可：
+
+~~~js
+computed: {
+  attribute() {
+    /*
+    	技巧：这里获取text对象的type属性和background对象的type属性运用了解构赋值（获取深层嵌套对象的深层的某个属性的方法）
+    */
+    const {
+      text: { type: textType },
+      background: { type: backgroundType },
+    } = this.example;
+    return getAttributeOptions(textType, backgroundType);
+  },
+  ...
+}
+~~~

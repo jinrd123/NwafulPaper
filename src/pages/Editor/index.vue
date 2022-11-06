@@ -1,22 +1,21 @@
 <template>
   <el-container class="container">
-    <el-aside width="300px"
-      ><attribute-tree :options="attribute" :values="example"
-    /></el-aside>
+    <el-aside width="300px">
+      <attribute-tree :options="attribute" :values="example" />
+    </el-aside>
     <el-container>
-<div
-          :style="{
-            transform: `translate(${transformed.translateX}px, ${transformed.translateY}px) scale(${transformed.scale}, ${transformed.scale})`,
-            transformOrigin: 'left top',
-          }"
-        >
-          <wallpaper
-            :options="example"
-            :mode="example.mode"
-            :width="windowWidth"
-            :height="windowHeight"
-          /></div
+      <div
+        :style="{
+          transform: `translate(${transformed.translateX}px, ${transformed.translateY}px) scale(${transformed.scale}, ${transformed.scale})`,
+          transformOrigin: 'left top',
+        }"
       >
+        <wallpaper
+          :options="example"
+          :width="windowWidth"
+          :height="windowHeight"
+        />
+      </div>
     </el-container>
   </el-container>
 </template>
@@ -32,13 +31,18 @@ export default {
   data() {
     return {
       example: {
-        mode: "color",
-        title: "How are you?",
-        fontSize: 200,
-        fontFamily: "Luckiest Guy",
-        fontURL,
-        background: "#fcbc23",
-        text: "#532582",
+        text: {
+          content: "How are you?",
+          fontSize: 200,
+          fontFamily: "Luckiest Guy",
+          fontURL,
+          type: "none",
+          color: "#532582",
+        },
+        background: {
+          type: "none",
+          color: "#fcbc23",
+        },
       },
     };
   },
@@ -74,7 +78,11 @@ export default {
       };
     },
     attribute() {
-      return getAttributeOptions(this.example.mode);
+      const {
+        text: { type: textType },
+        background: { type: backgroundType },
+      } = this.example;
+      return getAttributeOptions(textType, backgroundType);
     },
   },
 };

@@ -96,11 +96,11 @@ export default {
             rotation: -45,
             width: 25,
             height: 25,
-            foregroundColor: "currentColor",
+            foregroundColor: "#000",
             color: "#89E089",
           },
           background: {
-            color: "white",
+            color: "#fff",
             foregroundColor: "#ddd",
             type: "line",
           },

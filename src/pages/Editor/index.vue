@@ -101,7 +101,7 @@ export default {
   background-color: #d3dce6;
 }
 
-.el-main {
+.el-container {
   background-color: #e9eef3;
   overflow: hidden;
   padding: 0px;

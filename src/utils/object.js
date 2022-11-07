@@ -9,3 +9,12 @@ export function set(obj, key, value) {
     const keys = key.split(".");
     return keys.reduce((obj, key) => obj[key], obj);
   }
+
+  export function deepCopy(obj) {
+    if (typeof obj !== "object") return obj;
+    return Object.entries(obj).reduce(
+      (newObj, [key, value]) => ((newObj[key] = deepCopy(value)), newObj),
+      {}
+    );
+  }
+  

@@ -1541,3 +1541,60 @@ computed: {
   ...
 }
 ~~~
+
+# 26.深拷贝解决`deep-watch`新旧值相同的问题（wallpaper性能优化）
+
+Wallpaper组件对props接收的配置对象进行深度监视，如果配置对象发生改变，就重新进行渲染（执行`render`），但是由于深度监视可以监视到对象的属性变化，但是如果仅仅是对象的属性值发生改变，而指向对象本身的引用如果没有改变的话，`watch`的回调函数中，新值与旧值相同（都等于新值），**但是如果监听的对象的引用发生改变，那么就会保存旧值与新值**。
+
+所以我们想在对某个对象进行监视的时候获取它变化前的旧值，恰好这个对象是通过`props`接收的对象，那么对应的解决方案：在父组件中写一个计算属性，这个计算属性对想传给子组件的对象进行深拷贝，传给子组件的是深拷贝的结果。这样子组件中`watch`中新旧值为不同引用，旧值就得以保存。
+
+项目中，Editor组件维护着Wallpaper组件的配置对象，并且`AttributeTree`组件生成的功能按钮通过`v-model`与这个对象的属性值进行了绑定，对Wallpaper的配置对象的值进行修改，然后这个配置对象传递给Wallpaper组件用于渲染。我们在Editor组件中给Wallpaper传递配置对象之前对配置对象进行深拷贝，然后传给Wallpaper这个深拷贝的对象，这样每次Editor中对象发生变化，Wallpaper都接收到的是一个新引用对象，然后监听函数：
+
+~~~js
+watch: {
+  /*
+  		options是通过props接收的对象
+  */
+  options: {
+    deep: true,
+    handler(oldData, newData) {
+      /*
+      		我们通过深拷贝的方法保留了oldData，这样就可以比较fontURL和imageURL（普通字符串类型）究竟有没有变化，设置this.fontFace和this.image是否置为undefined从而决定字体或图片需不需要重新加载，达到优化效果
+      */
+      if (newData.text.fontURL !== oldData.text.fontURL) this.fontFace = undefined;
+      if (newData.background.imageURL !== oldData.background.imageURL) this.image = undefined;
+      this.render();
+    },
+  },
+      
+  ...
+  
+}
+~~~
+
+深拷贝函数`utils/object.js - deepCopy`：
+
+*这个深拷贝只针对项目里深层嵌套对象，且对象属性值为对象或者基本类型的情况。但是写法还是很精彩的。*
+
+~~~js
+export function deepCopy(obj) {
+  /*
+  		递归结束条件：值为普通类型，就直接返回
+  */
+  if (typeof obj !== "object") return obj;
+  /*
+  		递归只管当前一层，先用Object.entries把对象的本层转化成数组，数组项为[key,value]
+  		reduce的newObj初始值为{},直接给newObj赋值（添加属性）即可
+  */
+  return Object.entries(obj).reduce(
+    /*
+    	下面的箭头函数的函数体使用了逗号运算符：
+    		括号()里面可以存放若干个js语句，语句之间用","分隔，相当于把多个js操作放到一个语句中，()返回内部最后一个操作的值
+    		说白了这里就是不想给箭头函数的函数体使用{}，这样可以省略return，但还想执行两个操作（赋值和返回），所以把两个操作放在()中，并用逗号运算符分隔
+    */
+    (newObj, [key, value]) => ((newObj[key] = deepCopy(value)), newObj),
+    {}
+  );
+}
+~~~
+

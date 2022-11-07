@@ -11,7 +11,7 @@
         }"
       >
         <wallpaper
-          :options="example"
+          :options="wallpaperOptions"
           :width="windowWidth"
           :height="windowHeight"
         />
@@ -26,6 +26,7 @@ import AttributeTree from "@/components/AttributeTree/index.vue";
 import { useWindowSize } from "@/mixins/useWindowSize";
 import fontURL from "@/assets/font/LuckiestGuy.woff2";
 import { getAttributeOptions } from "@/utils/attribute";
+import { deepCopy } from "@/utils/object";
 export default {
   name: "Editor",
   data() {
@@ -83,6 +84,9 @@ export default {
         background: { type: backgroundType },
       } = this.example;
       return getAttributeOptions(textType, backgroundType);
+    },
+    wallpaperOptions() {
+      return deepCopy(this.example);
     },
   },
 };

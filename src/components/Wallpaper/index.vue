@@ -48,7 +48,7 @@ export default {
       deep: true,
       handler(oldData, newData) {
         if (newData.text.fontURL !== oldData.text.fontURL) this.fontFace = undefined;
-        if (newData.background.imageURL !== oldData.background.imageURL) this.image = undefined;
+        this.image = undefined;
         this.render();
       },
     },

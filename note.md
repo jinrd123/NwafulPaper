@@ -1598,3 +1598,42 @@ export function deepCopy(obj) {
 }
 ~~~
 
+# 27.bug修复：Editor页面且Wallpaper背景为图片时刷新浏览器页面控制台报错
+
+## bug原因：
+
+在Editor页面，data维护了一个写死的example对象作为Wallpaper组件的，默认配置对象，在路由组件激活生命周期activated执行时对会话存储进行读取来更新example对象。Editor页面刷新时，data加载完毕就会把写死的那个默认的example对象传给Wallpaper，然后Editor组件在执行activated回调之后example更新，会再传给Wallpaper组件背景为图片的配置对象，然后这两次对Wallpaper配置对象的传递在Wallpaper内部分别体现在：第一次默认对象被Wallpaper组件的mounted生命周期所使用，调用了render函数，render函数体就两大逻辑，loadAssets加载字体图片以及drawWallpaper绘制canvas。对于Wallpaper接受到的第一个配置对象,我们并没有加载图片资源，而且在执行drawWallpaper函数体的子函数drawBackground时，根据配置对象的type属性决定是否要用图片资源进行绘制，对于这个第一个接收到的配置对象，type为none，根本也不会去执行图片绘制的逻辑。错误的核心就在于传给drawWallpaper函数的配置对象是this.options，但在Wallpaper接收到第一个对象，针对第一个对象的mounted生命周期的render函数绘制执行完之前，Wallpaper又接收到了第二个对象（背景为图片的、Editor组件从会话存储中读到的对象），Wallpaper的this.options发生改变，watch对this.options进行监听，又触发了第二个render函数，这个render函数肯定是正常执行了，不会报错，但错就错在this.options的改变发生在第一个render函数执行drawBackground之前（具体执行顺序没搞太明白，但经过测试确实如此），因为js函数体接受的参数是引用，所以在第一次绘制时执行drawBackground时type值已经成“image”了（因为判断时配置对象已经是接收的第二个了），导致图片资源没加载，但却执行了绘制图片的逻辑。
+
+## 解决方案：
+
+修改Editor页面的data逻辑，在data数据加载时就先获取会话存储，这样就与activated统一起来了，因为传给wallpaper的配置对象该是什么就是什么（不会像更正前默认example一样作为莫名其妙的默认对象传给wallpaper），这样就可以正确渲染了
+
+`Editor - data`：
+
+~~~js
+data() {
+  /*
+  		data中就获取本地存储
+  */
+  let example = sessionStorage.getItem("wallpaperInfo")
+    ? JSON.parse(sessionStorage.getItem("wallpaperInfo"))
+    : {
+      text: {
+        content: "How are you?",
+        fontSize: 200,
+        fontFamily: "Luckiest Guy",
+        fontURL,
+        type: "none",
+        color: "#532582",
+      },
+      background: {
+        type: "none",
+        color: "#fcbc23",
+      },
+    };
+  return {
+    example,
+  };
+},
+~~~
+

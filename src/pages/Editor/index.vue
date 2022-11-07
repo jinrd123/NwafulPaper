@@ -30,8 +30,9 @@ import { deepCopy } from "@/utils/object";
 export default {
   name: "Editor",
   data() {
-    return {
-      example: {
+    let example = sessionStorage.getItem("wallpaperInfo")
+      ? JSON.parse(sessionStorage.getItem("wallpaperInfo"))
+      : {
         text: {
           content: "How are you?",
           fontSize: 200,
@@ -44,7 +45,9 @@ export default {
           type: "none",
           color: "#fcbc23",
         },
-      },
+      };
+    return {
+      example,
     };
   },
   mixins: [useWindowSize()],

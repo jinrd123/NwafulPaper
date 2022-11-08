@@ -1637,3 +1637,74 @@ data() {
 },
 ~~~
 
+# 27.增加ImagePicker组件，Editor组件左侧实现图片展示
+
+说白了我们就是对原本AttributeTree组件中<el-upload>部分进行封装，形成`ImagePicker`组件，组件内部用<img />标签替换原本的<el-button>按钮，自然我们需要传给`ImagePicker`组件图片`url`，并且希望`AttributeTree`组件与`ImagePicker`父子组件之间通过props传递的这个imageURL形成双向数据绑定，如果没有`ImagePicker`这层组件，直接`v-model`就行了，但是给自定义组件使用`v-model`就需要进行配置了。
+
+
+
+## 知识点：给自定义组件使用`v-model`：
+
+自定义组件使用`v-model`的基本流程：父组件给子组件通过`v-model`传递过去一个`data`数据，子组件设置一个名为`value`的`props`，这个`value`就会默认接收父组件通过`v-model`传来的数据，然后子组件要想对这个父组件传来的数据进行修改，不能直接修改`value`，毕竟是普通类型的props数据，修改会报错，想要修改为`newValue`时需要执行`this.$emit("input", newValue)`。
+
+上面就是不进行设置时的情况：
+
+* 子组件接收数据的`props`变量为默认`value`
+* 子组件对原数据进行修改时，`this.$emit()`指定的事件名默认为`input`
+
+子组件内可以进行配置，修改接收数据的`props`的变量名和修改数据时自定义事件的事件名，配置组件的顶级对象（与data平级）：
+
+~~~js
+model: {
+    /*
+    	子组件接收数据的`props`变量为 "imageURL"
+    	子组件对原数据进行修改时，`this.$emit()`指定的事件名为"change"
+    */
+    prop: "imageURL",
+    event: "change",
+},
+~~~
+
+
+
+ImagePicker组件中给<el-upload>中的<img />标签添加样式。
+
+
+
+## 知识点：给`element-ui`组件添加自定义样式
+
+
+
+其实给element-ui组件添加样式也不是单纯的遵循*标签名就是对应的类名*的规则，正确的方法是利用浏览器自带的开发者工具（非vue），点击想操作的元素，看他有什么class类，而不是一层不变的遵循规则。而且如果给一个element-ui组件添加了一个自定义的样式类之后，在开发者工具中真正的元素嵌套并不一定是组件中我们分析出来的样子，比如我给<el-upload>添加`"image-uploader"`类：<el-upload class="image-uploader">，理论上讲这个类与`.el-upload`类是同一级的，但其实不是，在生成dom结构之后`.el-upload`类的<div>是`.image-uploader`类<div>的子元素。**不是什么规律，不用记，说白了看浏览器开发者工具一目了然**。
+
+**组件内修改element-ui组件的类时不能加`scoped`，不然无效**（不知道原因），但是如果不写`scoped`，修改饿了么组件的样式类会对其它的饿了么组件照成影响，为了防止影响其他组件，所以我们一般会给饿了么组件添加一个自定义类，然后修改饿了么组件的自带类时用后代选择器（两个类之间用空格分隔）对饿了么自带的类进行修改，这样就不会影响其它饿了么组件的样式。
+
+这就是给<el-upload>添加`"image-uploader"`类的原因，我们的目的就是修改饿了么的本身的自带类`.el-upload`，但是为了不影响其它组件，需要一个父类来形成后代选择器。
+
+ImagePicker组件中对`el-upload`类的修改：
+
+~~~css
+/*
+	不加scoped
+*/
+<style>
+/*
+	后代选择器选择.el-upload
+*/
+.image-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 150px;
+}
+
+...
+
+</style>
+~~~
+

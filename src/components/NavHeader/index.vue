@@ -4,6 +4,9 @@
     mode="horizontal"
     :router="true"
     :defaultActive="$route.path"
+    background-color="#24292f"
+    text-color="#ffffff"
+    active-text-color="#999999"
   >
     <el-menu-item index="/home">Home</el-menu-item>
     <el-menu-item index="/editor">Editor</el-menu-item>

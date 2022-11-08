@@ -7,15 +7,14 @@
       :values="values"
     />
   </div>
-  <div v-else-if="options.type === 'section'">
-    <span>{{ options.name }}</span>
+  <group v-else-if="options.type === 'section'" :name="options.name">
     <attribute-tree
       v-for="child in options.children"
       :options="child"
       :key="child.key"
       :values="values"
     />
-  </div>
+  </group>
   <feild v-else :name="options.name" :flex="options.type === 'image' ? 'col' : 'row'">
     <el-input
       v-if="options.type === 'text'"
@@ -28,7 +27,7 @@
       v-model="value"
       :min="options.min"
       :max="options.max"
-      :style="{ width: 200 + 'px' }"
+      :style="{ width: 150 + 'px' }"
     >
     </el-slider>
     <el-upload
@@ -47,13 +46,14 @@
 
 <script>
 import Feild from "./Field.vue";
+import Group from "./Group.vue";
 import { Message } from "element-ui";
 import { get, set } from "@/utils/object";
 import { readFile } from "@/utils/read";
 
 export default {
   name: "attribute-tree",
-  components: { Feild },
+  components: { Feild, Group },
   props: {
     options: Object,
     values: Object,

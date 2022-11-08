@@ -40,9 +40,4 @@ body {
     U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
     U+FEFF, U+FFFD;
 }
-@font-face {
-  font-family: "庞门正道粗书体";
-  font-weight: 400;
-  src: url(~@/assets/font/庞门正道粗书体.ttf) format("truetype");
-}
 </style>

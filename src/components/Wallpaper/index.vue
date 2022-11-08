@@ -13,6 +13,7 @@ export default {
     return {
       fontFace: undefined,
       image: undefined,
+      rendering: false,
     };
   },
   props: {
@@ -25,9 +26,14 @@ export default {
   },
   methods: {
     async render() {
+      if (this.rendering) return;
+      this.rendering = true;
+
       await this.loadAssets();
       if (this.image) this.options.background.image = this.image;
       drawWallpaper(this.$refs.canvas, this.width, this.height, this.options);
+
+      this.rendering = false;
     },
     async loadAssets() {
       try {

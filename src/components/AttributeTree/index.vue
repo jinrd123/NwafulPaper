@@ -7,6 +7,14 @@
       :values="values"
     />
   </div>
+  <div v-else-if="options.type === 'children'" class="children-container">
+    <attribute-tree
+      v-for="child in options.children"
+      :options="child"
+      :key="child.key"
+      :values="values"
+    />
+  </div>
   <group v-else-if="options.type === 'section'" :name="options.name">
     <attribute-tree
       v-for="child in options.children"
@@ -31,17 +39,15 @@
     >
     </el-slider>
     <image-picker v-if="options.type === 'image'" v-model="value"></image-picker>
-    <!-- <el-upload
-      v-if="options.type === 'image'"
-      class="upload"
-      action=""
-      :auto-upload="false"
-      :on-change="handleChange"
-      :on-exceed="handleExceed"
-      :limit="1"
-    >
-      <el-button size="small" type="primary"> select image </el-button>
-    </el-upload> -->
+    <el-select v-if="options.type === 'select'" v-model="value">
+      <el-option
+        v-for="item in options.options"
+        :key="item.value"
+        :label="item.label"
+        :value="item.value"
+      >
+      </el-option>
+    </el-select>
   </feild>
 </template>
 
@@ -75,9 +81,8 @@ export default {
 };
 </script>
 <style scoped>
-.upload {
-  width: 100%;
-  text-align: left;
+.children-container {
+  padding-left: 1em;
 }
 </style>
 

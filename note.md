@@ -1708,3 +1708,65 @@ ImagePicker组件中对`el-upload`类的修改：
 </style>
 ~~~
 
+# 28.AttributeTree组件添加修改type的功能
+
+使用<el-select>完成下拉选择功能。
+
+对于文本部分的配置对象数组，第一个和第二个配置对象对应文本内容和字体大小，为各种type都需要的配置。type相关的配置对象之前，我们先放一个生成<el-select>的对象，然后紧跟一个type为children的对象，这个对象的children数组为type相关的配置对象；
+
+AttributeTree的text结构配置对象：
+
+~~~js
+[
+    /*
+    	两个通用配置对象
+    */
+    {
+        type: "text",
+        key: "text.content",
+        name: "Content",
+        placeholder: "Please input title"
+    },
+    {
+        type: "number",
+        key: "text.fontSize",
+        name: "Font Size",
+        min: 10,
+        max: 300
+    },
+   	/*
+   		type下拉选择功能相关的配置对象
+   	*/
+    {
+        type: "select",
+        key: "text.type",
+        name: "Pattern",
+        options: [
+            { value: "none", label: "None" },
+            { value: "line", label: "Line" }
+        ],
+    },
+    /*
+    	与type相关的配置对象都放在下面的children数组中
+    */
+    {
+        type: "children",
+        children: getTextStyleOptions(type)
+    }
+];
+~~~
+
+对于背景部分的配置对象数组逻辑完全类似，所有功能都与type相关，所以第一个配置对象就是select下拉选择组建的配置对象，然后紧跟children对象，其children数组为背景功能真实的配置对象。
+
+之所以把真实的功能配置对象放在type为children的对象的children数组中，是为了AttributeTree嵌套生成结构时凸显层级关系（实现具体功能的AttributeTree为select下拉选择AttributeTree组件的子组件）
+
+对应AttributeTree组件内添加处理type=children的结构（遍历其children数组）和处理type=select的基本功能结构。
+
+经过上面的修改，Editor页面的左侧AttributeTree组件已经可以正常生成了，而且<el-select>绑定了Wallpaper配置对象的type属性，修改之后Editor页面传给AttributeTree组件的`attribute`配置对象（计算属性）发生改变，自然AttributeTree生成的结构因为type不同发生改变。
+
+## 存留问题：
+
+因为**AttributeTree组件**、**AttributeTree组件数据结构（结构配置对象）**、**Wallpaper配置对象**三者是紧密结合、循环依赖的关系：根据Wallpaper的配置对象（文本和背景两个子对象）的type属性获取AttributeTree组件的配置对象，然后AttributeTree组件根据配置对象生成对应的结构，并且这些结构按钮通过`v-model`绑定了Wallpaper配置对象。统一三者循环关系的一个变量就是Wallpaper配置对象中的type属性（对文本配置取值有："none"、"line"；对背景配置："none"、"image"、"line"）。
+
+经过上面的更新，我们的AttributeTree生成的结构具备了修改Wallpaper配置对象的type的功能，相关的AttributeTree的结构对象也准备好了，但是目前的问题：我们在修改Wallpaper的type之后，生成的结构可能并没有正确绑定Wallpaper的配置对象，因为我们只是修改了Wallpaper配置对象的一个属性值，而没有修改Wallpaper的其它属性，比如type从"none"更改成"line"之后，Wallpaper配置对象虽然type为"line"却根本没有`rotation`属性，其他属性还是"none"时的属性，**所以目前的问题就是更改Wallpaper配置对象的type之后如何去修改一整个Wallpaper配置对象成为与type匹配的配置对象**。
+

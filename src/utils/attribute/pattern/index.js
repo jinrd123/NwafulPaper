@@ -11,3 +11,13 @@ export function getPatternOptions(type, prefix) {
     ...rest
   }));
 }
+
+export function getPatternRelations(prefix) {
+  return Object.entries(nameOptions).map(([name, options]) => ({
+    trigger: name,
+    actions: options.map(({ key, defaultValue }) => ({
+      key: `${prefix}.${key}`,
+      value: defaultValue
+    }))
+  }));
+}

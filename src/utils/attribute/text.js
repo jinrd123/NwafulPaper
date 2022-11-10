@@ -1,4 +1,4 @@
-import { getPatternOptions } from "./pattern";
+import { getPatternRelations, getPatternOptions } from "./pattern";
 export function getTextOptions(type) {
     return [
         {
@@ -22,6 +22,7 @@ export function getTextOptions(type) {
                 { value: "none", label: "None" },
                 { value: "line", label: "Line" }
             ],
+            relations: getPatternRelations("text")
         },
         {
             type: "children",

@@ -1,4 +1,4 @@
-import { getPatternOptions } from "./pattern";
+import { getPatternOptions, getPatternRelations } from "./pattern";
 export function getBackgroundOptions(type) {
     return [
         {
@@ -10,6 +10,27 @@ export function getBackgroundOptions(type) {
                 { value: "image", label: "Image" },
                 { value: "line", label: "Line" }
             ],
+            relations: [
+                {
+                    trigger: "none",
+                    actions: [
+                        {
+                            key: "background.color",
+                            value: "#000000"
+                        }
+                    ]
+                },
+                {
+                    trigger: "image",
+                    actions: [
+                        {
+                            key: "background.imageURL",
+                            value: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg"
+                        }
+                    ]
+                },
+                ...getPatternRelations("background")
+            ]
         },
         {
             type: "children",

@@ -1770,3 +1770,116 @@ AttributeTree的text结构配置对象：
 
 经过上面的更新，我们的AttributeTree生成的结构具备了修改Wallpaper配置对象的type的功能，相关的AttributeTree的结构对象也准备好了，但是目前的问题：我们在修改Wallpaper的type之后，生成的结构可能并没有正确绑定Wallpaper的配置对象，因为我们只是修改了Wallpaper配置对象的一个属性值，而没有修改Wallpaper的其它属性，比如type从"none"更改成"line"之后，Wallpaper配置对象虽然type为"line"却根本没有`rotation`属性，其他属性还是"none"时的属性，**所以目前的问题就是更改Wallpaper配置对象的type之后如何去修改一整个Wallpaper配置对象成为与type匹配的配置对象**。
 
+# 29.修改Wallpaper的配置对象的type属性时更新type相关的其他属性（28存留问题解决）
+
+解决思路：给select下拉选择的结构配置对象增加属性用来存储 各种type对应的、需要给Wallpaper配置对象增加的、属性。
+
+background的select下拉选择的结构配置对象：
+
+~~~js
+{
+  type: "select",
+  key: "background.type",
+  name: "Pattern",
+  options: [
+    { value: "none", label: "None" },
+    { value: "image", label: "Image" },
+    { value: "line", label: "Line" }
+  ],
+  /*
+  		新增relations数组，trigger代表type的类型，actions数值存放trigger类型需要（给Wallpaper配置对象）新增的属性
+  */
+  relations: [
+    {
+      trigger: "none",
+      /*
+      		对于普通的"none"类型，只需要增加（设置）一个color属性
+      */
+      actions: [
+        {
+          key: "background.color",
+          value: "#000000"
+        }
+      ]
+    },
+    {
+      trigger: "image",
+      actions: [
+        {
+          key: "background.imageURL",
+          value: "https://i.loli.net/2021/09/04/drBtUVNhlq87Rwc.jpg"
+        }
+      ]
+    },
+    ...getPatternRelations("background")
+  ]
+},
+~~~
+
+修改`AttributeTree`组件的`value`计算属性以利用新增的`relations`数据：
+
+~~~js
+computed: {
+  value: {
+    get() {
+      const { key } = this.options;
+      if (!key) return;
+      return get(this.values, key);
+    },
+    set(newValue) {
+      /*
+      		获取结构配置对象中的relations数组，利用set方法把他们添加到Wallpaper配置对象（this.values）身上
+      		只有select下拉选择的结构对象有relations数组，其它组件默认给一个空数组[]
+      */
+      const { key, relations = [] } = this.options;
+      if (!key) return;
+      
+      set(this.values, key, newValue);
+
+      for (const { trigger, actions } of relations) {
+        /*
+        	trigger用来匹配新的type
+        */
+        if (trigger === newValue) {
+          /*
+          	遍历属性列表
+          */
+          for (const { key, value } of actions) {
+            const oldValue = get(this.values, key);
+            /*
+            	属性列表中的属性不是无脑添加与设置，只有以前没有这个属性（oldValue === undefined）才添加并设置（set）
+            */
+            if (oldValue === undefined) {
+              set(this.values, key, value);
+            }
+          }
+        }
+      }
+    },
+  },
+},
+~~~
+
+经过上面的修改会发现：background部分通过下拉框选择了新的type之后，新type的初始状态可以正常显式，但是通过下面的功能按钮修改属性时无效，原因：**我们通过set方法给Wallpaper配置对象手动添加的新属性并不是响应式的属性**，这些属性虽然存在于Wallpaper配置对象上了，但是它们的修改并不会被监听到，视图也不会进行更新。
+
+修改`@/utils/object.js - set`：
+
+~~~js
+import Vue from "vue";
+
+export function set(obj, key, value) {
+  const keys = key.split(".");
+  const lastKey = keys.pop();
+  const o = keys.reduce((o, key) => o[key], obj);
+	
+  /*
+  		使用Vue.set(obj, key, value)，为某个响应式对象（组件的数据）obj添加响应式属性
+  */
+  // o[lastKey] = value;
+  Vue.set(o, lastKey, value);
+}
+~~~
+
+这样背景部分的功能就全部正常了。
+
+文字部分的逻辑完全类似，给AttributeTree的select结构对象增加`relations`数组即可。

@@ -72,9 +72,23 @@ export default {
         return get(this.values, key);
       },
       set(newValue) {
-        const { key } = this.options;
+        const { key, relations = [] } = this.options;
         if (!key) return;
+        
+        // set value for this key
         set(this.values, key, newValue);
+
+        // set values for releated keys
+        for (const { trigger, actions } of relations) {
+          if (trigger === newValue) {
+            for (const { key, value } of actions) {
+              const oldValue = get(this.values, key);
+              if (oldValue === undefined) {
+                set(this.values, key, value);
+              }
+            }
+          }
+        }
       },
     },
   },

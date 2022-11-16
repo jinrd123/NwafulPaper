@@ -1883,3 +1883,174 @@ export function set(obj, key, value) {
 这样背景部分的功能就全部正常了。
 
 文字部分的逻辑完全类似，给AttributeTree的select结构对象增加`relations`数组即可。
+
+# 项目总结
+
+## 开发过程
+
+### 1.导航栏路由配置
+
+使用element-ui的基操：安装，main.js里引入总样式，按需引入组件并`Vue.use`，导航栏<el-meun>使用路由模式<el-menu :router="true">
+
+### 2.初期Wallpaper选择一个<p>
+
+然后`:style="{}"`添加字体颜色等样式，加载字体在App.vue里使用`@font-face`使用字体文件（后期选择<canvas>代替<p>既是为了扩展绘制模式，也可完成下载功能）
+
+### 3.定义两个混入：维护屏幕大小属性 && 维护鼠标滚轮滚动程度
+
+混入的定义方式：data配置之后，`mounted`中：`window.addEventListener("mousewheel" / "resize",() => {更新数据}`
+
+其中useWindowScroll传入参数minY与maxY，使用约束函数（`constrain`，任意两者取大再与剩者取小）进行范围控制
+
+### 4.Home组件和Editor组件进行缓存
+
+（ <keep-alive include="数组">包裹<router-view> ）
+
+### 5.<p>初换<canvas>，首次绘制字体加载失败的问题
+
+`@font-face`异步动态加载（使用时才加载）所致，使用字体对象`Fontface`，绘制canvas之前执行`await new FontFace().load()`即可。
+
+### 6.绘制模式的逻辑分解，绘制功能的横向拓展
+
+初始增加绘制模式时通过mode属性进行绘制模式的区分，一个mode对应一整个大模式，后来逐渐改进Wallpaper配置对象，进行绘制逻辑的解耦。
+
+### 7.初始新增pattern绘制模式
+
+说白了就是封装`containerContext.createPattern(canvas, "repeat");`方法构造`fillStyle`，然后再填充（绘制）canvas。
+
+`line`方法在临时构造的canvas上画线条，然后用这个canvas去构造`fillStyle`（`createPattern(canvas, "repeat")`），旋转效果是最后对newPattern进行矩阵变化得到的。（`pattern.setTransform(matrix);`）
+
+构造`matrix`旋转矩阵时除了旋转角度一个参数，还需要一个与canvas优化相关的参数：构造`fillStyle`时创建的canvas的上下文也是经过canvas画质优化方法创建的，所以最后那一句`scale(2, 2)`会导致创建出来的`fillStyle`比较稀疏（比较于没有执行`scale`的canvas，绘制的图案密度小），所以我们在创建`matrix`变化矩阵时，把`a b c d`四个canvas参数全部缩小，这就可相当于抵消了`scale`，使得绘制的东西（线条）重新变得更加紧密一点。（如果canvas画质优化时canvas密度扩大的太多，会导致线条非常稀疏）
+
+### 8.canvas画质优化
+
+canvas的width和height设置为2倍（这个2可以根据window对象pixelRatio属性、设备像素比来决定，但效果没有2好），然后通过style设置width和height为原本大小，最后执行`scale(2, 2)`让绘制坐标与视觉统一。
+
+### 9.绘制图片前加载资源
+
+对于有加载完毕生命周期回调的图片资源，直接`await new Promise()`
+
+Promise执行器中在资源加载完毕生命周期中调用`resolve(资源)`
+
+~~~js
+async loadImage() {
+  this.image = await new Promise((resolve)=>{
+    const newImage = new Image();
+    newImage.src = this.options.imageURL;
+    newImage.onload = function() {
+      resolve(newImage);
+    }
+  })
+}
+~~~
+
+### 10.图片不拉伸裁剪算法
+
+确定裁剪大小：
+
+知道图片的宽高比和canvas的宽高比，如果canvas比较扁，图片放大后（放大理解法），所以裁剪图片时宽度完全保留，高度根据canvas的宽高比和裁剪宽度决定。如果canvas比较高，图片裁剪后高度完全保留，宽度由canvas宽高比与裁剪高度决定。
+
+计算裁剪位置：
+
+裁剪到的图片永远是原图的一部分（裁剪图<=原图），无脑原图减裁剪图除二就是裁剪位置。
+
+### 11.Screen组件添加边框
+
+`borderImage`结合`borderImageSlice`属性切图，但是需要考虑页面缩放时边框大小合理（canvas大小适配于windowWidth，然后设置`borderWidth`与canvas大小保持一个固定比例即可）
+
+### 12.canvas缩放抖动bug（bug修复与性能优化）
+
+经过代码排查，是因为每次缩放时重新加载字体或者图片耗时太大，scale缩放先执行，后面渲染执行，原本一瞬间的绘制出现了间隔。
+
+data中配置fontFace和image变量保存记录当前Wallpaper对字体与图片资源的加载情况，每次重新加载字体或图片之前，判断只有data中资源没有加载完成（根据字体对象或者图片对象的属性判断）才进行新的加载，所以对Wallpaper配置对象进行深度监听，在传入的字体地址或者图片地址改变时设置组件内`this.fontFace`和`this.image`为`undefined`，这里引出一个新问题：vue深度监听某个对象时能监听到对象属性值的变化，但是回调函数接收的新值与旧值相同，所以采取配置对象深拷贝之后传给Wallpaper。
+
+深拷贝纯嵌套对象（无数组）：
+
+~~~js
+export function deepCopy(obj) {
+  if (typeof obj !== "object") return obj;
+  return Object.entries(obj).reduce(
+    (newObj, [key, value]) => ((newObj[key] = deepCopy(value)), newObj),
+    {}
+  );
+}
+~~~
+
+### 13.组件封装：定位缩放组件Scale变定位功能为可选功能
+
+通过props接收的布尔值，结合:style的数组形式：`:style="[bool&&{}]"`——布尔值控制样式集合对象是否存在
+
+~~~html
+<div
+:style="[
+    fixed && {
+    position: 'absolute',
+    left: transformed.x + 'px',
+    top: transformed.y + 'px',
+    zIndex,
+    },
+    {
+    transformOrigin: 'left top',
+    transform: `scale(${transformed.scale}, ${transformed.scale})`,
+    width: transformed.width + 'px',
+    height: transformed.height + 'px',
+    },
+    styles,
+]"
+>
+<slot />
+</div>
+~~~
+
+### 14.修改element-ui的默认样式时防止全局样式污染问题
+
+可以给想修改样式的element组件添加一个父<div>，通过子代选择器选中父<div>下的element组件，其实也可以直接给element组件添加自定义类，在浏览器开发者工具中可以看到我们添加的自定义类与element组件的类究竟什么关系。然后根据css选择器选中这一个element组件。
+
+### 15.Home页面转Editor页面Wallpaper预览
+
+Home页面点击轮播图中的Wallpaper转跳Editor页面之前对Wallpaper配置对象进行本地会话存储`sessionStorage.setItem`，然后因为Editor组件是被缓存的路由组件，所以要把读取本地会话存储的逻辑放在`activated`生命周期中，在`deactivated`中清除会话存储`sessionStorage.removeItem`。
+
+此时要修改`data`中的逻辑，也读取本地会话存储，不然：
+
+当前Editor背景为图片，刷新浏览器，Editor页面先加载data，然后Wallpaper配置对象是普通的默认对象，随之deactivatd更改了Wallpaper配置对象成为了图片类型，**推测异步函数会在data与deactivated执行之后执行，导致mounted生命周期中执行render渲染时并没有加载图片资源，但是此时配置对象已经成为图片类型，然后按照图片类型进行绘制，导致报错**
+
+总而言之，activated中修改data数据的操作（读取本地存储），需要在data中也执行。
+
+### 16.Editor页面Wallpaper预览适配算法
+
+核心逻辑就是让Wallpaper能在<el-main>中能放的开，算出el-main中留出来的大小，Wallpaper与window宽高等比，根据宽或者高中缩小比例比较大的进行缩小，根据缩小比例算出translateX Y。
+
+### 17.图片上传功能
+
+利用没有action属性的<el-upload>标签（不使用其上传功能）获取文件对象，然后用`FileReader`对象处理文件对象：
+
+~~~js
+handleChange(file) { //这是<el-upload>事件的回调函数
+  /*
+  	回调的核心逻辑就是对图片类型的文件对象的处理：使用FileReader对象
+  	并且完成对values（wallpaper配置对象）的修改
+  */
+  const reader = new FileReader();
+  reader.readAsDataURL(file.raw);
+  reader.onload = (event) => {
+    console.log(event);
+    const imageURL = event.target.result;
+    this.values.imageURL = imageURL;
+  };
+},
+~~~
+
+### 18.AttributeTree组件
+
+递归组件，接收两个对象，结构对象和value对象，根据数据结构递归遍历生成相应的结构，相应的按钮绑定value对象的属性值。
+
+对应的结构对象：
+
+四层嵌套对象，由外至内对象的type属性为container、section（文本与背景）、children（<el-select>下拉框下面）、真实结构对象。
+
+<el-select>绑定value对象的type属性值，在Editor对象中，type一改，相关的结构对象就会修改，自然生成不同的结构。
+
+（修改type生成的children部分的结构）  还需要绑定value对象的属性值，必要时给value对象添加新的属性，这里就需要AttributeTree组件的计算属性value，使用set、get模式定义
+
+添加属性新属性逻辑：只有<el-select>对象有relations数组，每次set  value时获取relations，如果有就根据relations的内容进行添加，添加新属性需要`Vue.set`（响应式数据）
+

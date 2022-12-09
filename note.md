@@ -1884,6 +1884,43 @@ export function set(obj, key, value) {
 
 文字部分的逻辑完全类似，给AttributeTree的select结构对象增加`relations`数组即可。
 
+# 30.BackGround页面视差滚动页面
+
+说白了在鼠标滑动过程中有一种动态的转化效果其实就是最上面的几张图片都绝对定位，然后用实时维护的鼠标滚动程度变量scrollY对这几张图片的定位属性进行修改
+
+相关结构：
+
+~~~html
+<section>
+  <img :src="starsURL" :style="{ left: scrollY * 0.25 + 'px' }" />
+  <img :src="moonURL" id="moon" :style="{ top: scrollY * 1.05 + 'px' }" />
+  <img :src="mountainsBehindURL" id="mountains_behind" :style="{ top: scrollY * 0.5 + 'px' }" />
+  <h2
+    ref="text"
+    id="text"
+    :style="{ marginRight: scrollY * 4 + 'px', marginTop: scrollY * 1.5 + 'px' }"
+  >
+    Study Forever
+  </h2>
+  <a href="#sec" id="btn" :style="{ marginTop: scrollY * 1.5 + 'px' }">Explore</a>
+  <img :src="mountainsFrontURL" id="mountains_front" />
+</section>
+~~~
+
+这里的布局很奇怪，<section>是flex布局，里面的所有元素图片和按钮都是定位元素，这就很奇怪。没搞懂布局
+
+但是这种视差效果的思路就是监听鼠标滚动事件，然后组件内维护一个`scrollY`属性记录鼠标滚动位置：
+
+~~~js
+mounted() {
+  window.addEventListener("scroll", () => {
+    this.scrollY = window.scrollY;
+  });
+},
+~~~
+
+我们根据这个值去动态修改section中元素的定位属性，让他们的移动速率不同，方向不同，就出现了这种视差效果。
+
 # 项目总结
 
 ## 开发过程

@@ -37,9 +37,11 @@ function drawText(
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillStyle = fillStyle;
+  // fillText与fillRect并无本质差别，fillText也是绘制一种图形，自然可以用fillStyle来进行装饰
   context.fillText(content, width / 2, height / 2);
 }
 
+// 以conver的模式确定图片的大小 & 居中在canvas上进行图片绘制
 function drawImage(context, image, width, height) {
   const { width: imageWidth, height: imageHeight } = image;
   const imageAspect = imageHeight / imageWidth;

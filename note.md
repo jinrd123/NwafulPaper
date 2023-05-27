@@ -1923,6 +1923,37 @@ mounted() {
 
 这里有个bug需要记录一下，`window.addEventListener`添加全局监听事件的时候，监听了`scroll`事件（页面滑动条滑动），这时候如果回调函数写成`function`普通函数，那么window.scrollY就一直是滑动条初始位置对应的第一个值，一直不改变，写成箭头函数就没问题了，应该和vue的底层实现有关。
 
+
+
+# 31.改造为monorepo
+
+首先配置工作空间：根目录下`pnpm-workspace.yaml`：
+
+~~~yaml
+packages:
+  - 'packages/*'
+~~~
+
+并创建`packages`文件夹来管理两个子项目，`/packages/nwafulpaper-with-vue`存放原vue项目代码，`/packages/draw-utils`存放原`/src/utils`工具方法集合。
+
+
+
+给两个子项目创建`package.json`，`draw-utils`项目包名命名为`rd666-draw-utils`，然后给vue项目添加`rd666-draw-utils`依赖：
+
+~~~bash
+pnpm add rd666-draw-utils --filter nwafulpaper-with-vue  
+~~~
+
+**`--filter`**表示只给工作空间的`nwafulpaper-with-vue`项目安装依赖（当下存在三个安装依赖的位置，vue项目、工具函数项目，以及根目录），只有所有项目共用的依赖才安装到根目录中，比如构建工具？安装时使用参数**`-w，也就是--workspace-root`**指定依赖安装在根目录。
+
+上面给vue项目添加`rd666-draw-utils`依赖时踩了个坑就是一开始`rd666-draw-utils`包名为`draw-utils`，但是由于跟`npm源`的某三方依赖包重名，所以一直没发正确安装上我们自己的`draw-utils`，当下没有找到解决方法就更改了工具类包名为`rd666-draw-utils`。
+
+
+
+然后vue项目中修改资源引用路径，删除以前的`/src/utils`并将vue项目中`@/utils`全部修改为`rd666-draw-utils/lib`即可。
+
+
+
 # 项目总结
 
 ## 开发过程

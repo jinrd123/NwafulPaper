@@ -55,7 +55,7 @@
 import Feild from "./Field.vue";
 import Group from "./Group.vue";
 import ImagePicker from "@/components/ImagePicker";
-import { get, set } from "@/utils/object";
+import { get, set } from "rd666-draw-utils/lib/object";
 
 export default {
   name: "attribute-tree",

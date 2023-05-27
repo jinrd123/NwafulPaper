@@ -1,16 +1,12 @@
 {
-  "name": "nwaful-paper",
+  "name": "rd666-draw-utils",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "serve:vue": "pnpm run -C ./packages/nwafulpaper-with-vue serve",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "workspaces": [
-    "packages/*"
-  ]
+  "license": "ISC"
 }

@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { map } from "@/utils/math";
+import { map } from "rd666-draw-utils/lib/math";
 
 export default {
   props: {

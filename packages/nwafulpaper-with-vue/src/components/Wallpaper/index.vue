@@ -3,8 +3,8 @@
 </template>
 
 <script>
-import { drawWallpaper } from "@/utils/wallpaper";
-import { loadImage, loadFont } from "@/utils/load";
+import { drawWallpaper } from "rd666-draw-utils/lib/wallpaper";
+import { loadImage, loadFont } from "rd666-draw-utils/lib/load";
 import { Message } from "element-ui";
 
 export default {

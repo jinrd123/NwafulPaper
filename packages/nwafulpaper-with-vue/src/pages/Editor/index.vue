@@ -25,8 +25,8 @@ import Wallpaper from "@/components/Wallpaper";
 import AttributeTree from "@/components/AttributeTree/index.vue";
 import { useWindowSize } from "@/mixins/useWindowSize";
 import fontURL from "@/assets/font/LuckiestGuy.woff2";
-import { getAttributeOptions } from "@/utils/attribute";
-import { deepCopy } from "@/utils/object";
+import { getAttributeOptions } from "rd666-draw-utils/lib/attribute";
+import { deepCopy } from "rd666-draw-utils/lib/object";
 export default {
   name: "Editor",
   data() {

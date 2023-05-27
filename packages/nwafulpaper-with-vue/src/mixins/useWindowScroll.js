@@ -1,4 +1,4 @@
-import { constrain } from "../utils/math";
+import { constrain } from "rd666-draw-utils/lib/math";
 
 export const useWindowScroll = (
   minY = 0,

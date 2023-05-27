@@ -51,7 +51,7 @@ import Wallpaper from "@/components/Wallpaper";
 import Screen from "@/components/Screen";
 import { useWindowScroll } from "@/mixins/useWindowScroll";
 import { useWindowSize } from "@/mixins/useWindowSize";
-import { map } from "@/utils/math";
+import { map } from "rd666-draw-utils/lib/math";
 import fontURL from "@/assets/font/LuckiestGuy.woff2";
 import screenURL from "@/assets/images/mac.png";
 import Scale from "@/components/Scale";

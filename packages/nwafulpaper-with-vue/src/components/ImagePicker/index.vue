@@ -14,7 +14,7 @@
 
 <script>
 import { Message } from "element-ui";
-import { readFile } from "@/utils/read";
+import { readFile } from "rd666-draw-utils/lib/read";
 export default {
   name: "image-picker",
   model: {
